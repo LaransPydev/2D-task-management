@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sportstech · Creative Ops — Amazon Pipeline Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   SPORTSTECH CREATIVE OPS
+   Strict two-colour system: ink #25282A + accent #0071E3.
+   Everything else is those two mixed with white. No third hue.
+   Severity is carried by WEIGHT and FILL DENSITY, not by colour:
+     solid ink = stopped / critical    mid grey = watch
+     accent blue = active, approved, current
+   ============================================================ */
+:root{
+  --bg:#FFFFFF;
+  --ink:#25282A;
+  --acc:#0071E3;
+  --acc-dim:#A8CFF4;
+
+  --s1:#FAFBFB;
+  --s2:#F3F5F6;
+  --s3:#EAEDEF;
+  --line:#E4E7E9;
+  --line-2:#D3D8DB;
+
+  --tx:#25282A;
+  --tx-2:#5F6365;
+  --tx-3:#8E9294;
+
+  /* semantic aliases, all inside the two-colour system */
+  --ok:#0071E3;
+  --info:#0071E3;
+  --warn:#8E9294;
+  --bad:#25282A;
+
+  --r:6px;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;
+  --sh:0 1px 2px rgba(37,40,42,.04);
+  --sh-lg:0 18px 48px rgba(37,40,42,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--tx);
+  font-family:var(--sans);
+  font-size:13.5px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+/* the faintest paper grain — atmosphere without pattern */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.022'/%3E%3C/svg%3E");
+}
+#app{position:relative;z-index:1}
+::selection{background:var(--acc);color:#fff}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+a{color:var(--acc);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.up{text-transform:uppercase;letter-spacing:.14em}
+.tnum{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--s2)}
+::-webkit-scrollbar-thumb{background:var(--line-2);border:2px solid var(--s2);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:var(--tx-3)}
+
+/* ============ TOP BAR ============ */
+.topbar{
+  position:sticky;top:0;z-index:60;
+  display:flex;align-items:stretch;
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--line);
+}
+.brand{
+  display:flex;align-items:center;gap:11px;
+  padding:0 20px;height:56px;
+  border-right:1px solid var(--line);
+  flex-shrink:0;
+}
+.brand-mark{
+  width:22px;height:22px;flex-shrink:0;
+  background:var(--acc);
+  clip-path:polygon(0 0,100% 0,100% 68%,68% 100%,0 100%);
+  position:relative;
+}
+.brand-mark::after{content:'';position:absolute;inset:5px 5px auto auto;width:6px;height:6px;background:var(--bg)}
+.brand-txt{line-height:1.1}
+.brand-txt b{display:block;font-size:12.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
+.brand-txt span{display:block;font-family:var(--mono);font-size:9.5px;color:var(--tx-3);letter-spacing:.13em;text-transform:uppercase}
+
+.tabs{display:flex;align-items:stretch;flex:1;min-width:0;overflow-x:auto}
+.tab{
+  padding:0 18px;height:56px;display:flex;align-items:center;gap:8px;
+  font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--tx-3);border-right:1px solid var(--line);
+  position:relative;white-space:nowrap;transition:color .15s,background .15s;
+}
+.tab:hover{color:var(--tx-2);background:var(--s1)}
+.tab.on{color:var(--ink);background:var(--s1)}
+.tab.on::before{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--acc)}
+.tab .cnt{font-family:var(--mono);font-size:10px;color:var(--tx-2);background:var(--s3);padding:1px 5px;border-radius:3px}
+.tab.on .cnt{color:#fff;background:var(--acc)}
+
+.topbar-right{display:flex;align-items:center;gap:9px;padding:0 16px;border-left:1px solid var(--line);flex-shrink:0}
+.who{display:flex;align-items:center;gap:9px;padding:5px 10px 5px 5px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg);transition:.15s}
+.who:hover{border-color:var(--line-2);background:var(--s1)}
+.av{
+  width:24px;height:24px;border-radius:5px;display:grid;place-items:center;flex-shrink:0;
+  font-family:var(--mono);font-size:10px;font-weight:600;color:var(--tx-2);
+  border:1px solid var(--line-2);
+}
+.who-t{text-align:left;line-height:1.15}
+.who-t b{display:block;font-size:11.5px;font-weight:600}
+.who-t span{display:block;font-family:var(--mono);font-size:9px;color:var(--tx-3);text-transform:uppercase;letter-spacing:.09em}
+
+/* ============ MODE STRIP ============ */
+.modestrip{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:8px 20px;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;
+  border-bottom:1px solid var(--line);color:var(--tx-2);
+}
+.modestrip.demo{background:var(--s2)}
+.modestrip.live{background:rgba(0,113,227,.05)}
+.modestrip.err{background:var(--ink);color:#fff}
+.modestrip.err .sep,.modestrip.err span{color:rgba(255,255,255,.6)}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot.pulse{animation:pulse 2.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.modestrip b{font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.modestrip.err b{color:#fff}
+.modestrip .sep{color:var(--line-2)}
+
+/* ============ LAYOUT ============ */
+.wrap{padding:22px;max-width:1780px;margin:0 auto}
+.sechead{display:flex;align-items:baseline;gap:12px;margin:0 0 14px}
+.sechead h2{font-size:11.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx-2)}
+.sechead .rule{flex:1;height:1px;background:var(--line)}
+.sechead .n{font-family:var(--mono);font-size:10.5px;color:var(--tx-3)}
+
+/* ============ FILTER BAR ============ */
+.filters{
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  padding:12px;background:var(--s1);border:1px solid var(--line);border-radius:var(--r);margin-bottom:16px;
+}
+.fld{position:relative;display:flex;align-items:center}
+.fld>label{
+  position:absolute;left:9px;top:-6px;font-family:var(--mono);font-size:8.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--tx-3);
+  background:var(--s1);padding:0 4px;pointer-events:none;
+}
+select,input[type=text],input[type=date],input[type=search],textarea{
+  background:var(--bg);border:1px solid var(--line-2);border-radius:5px;
+  padding:7px 9px;font-size:12px;color:var(--tx);outline:none;transition:border-color .15s,box-shadow .15s;
+  font-family:var(--sans);
+}
+select{padding-right:26px;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 0h9L4.5 6z' fill='%238E9294'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;cursor:pointer}
+select:focus,input:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(0,113,227,.13)}
+input[type=search]{min-width:210px}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:7px 13px;border:1px solid var(--line-2);border-radius:5px;
+  background:var(--bg);font-size:11.5px;font-weight:600;letter-spacing:.02em;
+  transition:.15s;white-space:nowrap;color:var(--tx);
+}
+.btn:hover{background:var(--s2);border-color:var(--tx-3)}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.pri:hover{background:#0064CB;border-color:#0064CB}
+.btn.ok{background:rgba(0,113,227,.07);border-color:var(--acc);color:var(--acc)}
+.btn.ok:hover{background:rgba(0,113,227,.14)}
+.btn.warn{background:var(--bg);border-color:var(--tx-3);color:var(--tx-2)}
+.btn.warn:hover{background:var(--s2)}
+.btn.bad{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.bad:hover{background:#131617}
+.btn.sm{padding:5px 10px;font-size:10.5px}
+.btn.gh{background:transparent;border-color:var(--line)}
+.btn.gh:hover{border-color:var(--line-2);background:var(--s2)}
+.btn:disabled{opacity:.34;cursor:not-allowed}
+.btn:disabled:hover{background:var(--bg);border-color:var(--line-2)}
+.chipset{display:flex;gap:0;border:1px solid var(--line-2);border-radius:5px;overflow:hidden}
+.chipset button{
+  padding:6px 11px;font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--tx-3);background:var(--bg);border-right:1px solid var(--line);transition:.15s;
+}
+.chipset button:last-child{border-right:none}
+.chipset button:hover{color:var(--ink);background:var(--s2)}
+.chipset button.on{background:var(--acc);color:#fff}
+.chipset button.on.alarm{background:var(--ink);color:#fff}
+.spacer{flex:1}
+
+/* ============ KPI TILES ============ */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:18px}
+.kpi{background:var(--bg);padding:14px 15px 13px;position:relative}
+.kpi::after{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--k,var(--line-2))}
+.kpi .lb{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx-3);margin-bottom:8px;display:block}
+.kpi .vl{font-family:var(--mono);font-size:28px;font-weight:500;line-height:1;letter-spacing:-.03em;color:var(--ink)}
+.kpi .vl small{font-size:13px;font-weight:400;color:var(--tx-3);margin-left:1px}
+.kpi .sb{font-family:var(--mono);font-size:9.5px;color:var(--tx-3);margin-top:7px;display:block}
+.kpi .sb i{font-style:normal;color:var(--tx-2);font-weight:500}
+
+/* ============ PROJECT CARD ============ */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:14px;align-items:start}
+.card{
+  background:var(--bg);border:1px solid var(--line);border-radius:var(--r);
+  position:relative;transition:border-color .18s,box-shadow .18s;box-shadow:var(--sh);
+}
+.card:hover{border-color:var(--line-2);box-shadow:0 3px 12px rgba(37,40,42,.07)}
+.card.blocked{border-color:var(--ink)}
+.card.blocked::before{
+  content:'';position:absolute;inset:0;pointer-events:none;border-radius:var(--r);
+  background:repeating-linear-gradient(45deg,rgba(37,40,42,.028) 0 7px,transparent 7px 14px);
+}
+/* keep real content above the blocked hatch, so texture fills the gaps, never the text */
+.card>*{position:relative}
+.card-top{display:flex;align-items:flex-start;gap:12px;padding:14px 15px 12px;position:relative}
+.tbadge{
+  flex-shrink:0;width:38px;height:38px;display:grid;place-items:center;
+  border:1px solid var(--line-2);border-radius:5px;background:var(--s1);
+  font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.03em;color:var(--tx-2);
+  text-align:center;line-height:1.05;white-space:pre-line;
+}
+.card-id{flex:1;min-width:0}
+.card-id h3{font-size:15.5px;font-weight:700;letter-spacing:-.015em;line-height:1.2;display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--ink)}
+.card-id .meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px;font-family:var(--mono);font-size:10px;color:var(--tx-3);letter-spacing:.03em}
+.card-id .meta .pin{color:var(--tx-2)}
+.mkt{border:1px solid var(--line-2);border-radius:2px;padding:0 4px;font-size:9px;letter-spacing:.09em;color:var(--tx-2)}
+.pri-f{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;padding:1px 5px;border-radius:3px}
+.pri-f.high{background:var(--ink);color:#fff}
+.pri-f.med{background:var(--s3);color:var(--tx-2)}
+.pri-f.low{background:transparent;color:var(--tx-3);border:1px solid var(--line)}
+
+.stg{
+  display:inline-flex;align-items:center;gap:6px;flex-shrink:0;
+  padding:4px 9px;border-radius:3px;font-family:var(--mono);font-size:10px;
+  font-weight:600;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;
+  border:1px solid var(--line);
+}
+.stg .sq{width:6px;height:6px;border-radius:2px;flex-shrink:0}
+
+/* stage rail */
+.rail{display:flex;gap:3px;padding:0 15px 12px}
+.rail i{flex:1;height:3px;background:var(--s3);border-radius:2px;transition:background .3s}
+.rail i.done{background:var(--line-2)}
+.rail i.cur{background:var(--rc,var(--acc))}
+.rail i.loop{background:var(--ink)}
+
+.latest{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:11px 15px;border-top:1px solid var(--line);background:var(--s1);
+  font-size:12.5px;
+}
+.latest .ic{width:16px;height:16px;flex-shrink:0;display:grid;place-items:center;margin-top:1px;font-family:var(--mono);font-size:11px;color:var(--tx-3)}
+.latest .bd{flex:1;min-width:0}
+.latest .bd p{color:var(--tx-2);line-height:1.45}
+.latest .bd p b{color:var(--ink)}
+.latest .bd p em{font-style:normal;color:var(--tx-3)}
+.latest .bd .ts{font-family:var(--mono);font-size:9.5px;color:var(--tx-3);letter-spacing:.04em;margin-top:4px;display:block}
+
+.ball{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 15px;border-top:1px solid var(--line);font-size:11.5px}
+.ball .k{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx-3)}
+.ball .p{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink)}
+.ball .p .av{width:19px;height:19px;font-size:8.5px;border-radius:4px}
+.age{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:3px;border:1px solid var(--line-2);color:var(--tx-2);letter-spacing:.04em}
+.age.hot{border-color:var(--tx-3);color:var(--ink);background:var(--s2)}
+.age.crit{border-color:var(--ink);color:#fff;background:var(--ink)}
+.blockmsg{
+  display:flex;gap:9px;padding:10px 15px;border-top:1px solid var(--line);
+  background:var(--s2);font-size:12px;color:var(--ink);
+}
+.blockmsg b{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;flex-shrink:0;
+  background:var(--ink);color:#fff;padding:2px 6px;border-radius:3px;height:fit-content;margin-top:1px}
+
+.acts{display:flex;gap:6px;flex-wrap:wrap;padding:12px 15px;border-top:1px solid var(--line)}
+
+.tgl{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 15px;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--tx-3);transition:.15s;border-radius:0 0 var(--r) var(--r);
+}
+.tgl:hover{color:var(--ink);background:var(--s1)}
+.tgl .l{display:flex;align-items:center;gap:8px}
+.tgl .car{transition:transform .25s;display:inline-block;font-size:8px}
+.tgl.open{color:var(--ink);background:var(--s2);border-radius:0}
+.tgl.open .car{transform:rotate(90deg)}
+.tgl .badge{font-family:var(--mono);font-size:9px;background:var(--s3);padding:1px 6px;border-radius:3px;color:var(--tx-2)}
+.drawer{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1)}
+.drawer.open{grid-template-rows:1fr}
+.drawer>div{overflow:hidden}
+.drawer-in{border-top:1px solid var(--line);background:var(--s1);border-radius:0 0 var(--r) var(--r)}
+
+/* ---- drawer inner tabs ---- */
+.dtabs{display:flex;border-bottom:1px solid var(--line)}
+.dtabs button{
+  padding:9px 14px;font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--tx-3);border-right:1px solid var(--line);transition:.15s;position:relative;
+}
+.dtabs button:hover{color:var(--tx-2)}
+.dtabs button.on{color:var(--ink);background:var(--bg)}
+.dtabs button.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--acc)}
+.dpane{padding:14px 15px}
+
+/* ---- timeline log ---- */
+.tl{position:relative;padding-left:20px}
+.tl::before{content:'';position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--line-2)}
+.ev{position:relative;padding:0 0 14px}
+.ev:last-child{padding-bottom:0}
+.ev::before{
+  content:'';position:absolute;left:-18px;top:5px;width:7px;height:7px;border-radius:50%;
+  background:var(--ec,var(--tx-3));box-shadow:0 0 0 3px var(--s1);
+}
+.ev .eh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ev .eh b{font-size:12.5px;font-weight:600;color:var(--ink)}
+.ev .eh .ts{font-family:var(--mono);font-size:9.5px;color:var(--tx-3);letter-spacing:.03em}
+.ev .flow{font-family:var(--mono);font-size:10.5px;color:var(--tx-2);margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ev .flow s{text-decoration:none;color:var(--tx-3)}
+.ev .flow em{font-style:normal;color:var(--acc);font-size:9px}
+.ev .note{                              /* a quotation, so: a blockquote rule, no box */
+  margin-top:8px;padding:1px 0 1px 11px;border-left:2px solid var(--line-2);
+  font-size:12px;color:var(--tx-2);line-height:1.55;font-style:italic;
+}
+.ev .note.rev{border-left-color:var(--tx-3)}
+.ev .note.rej{border-left-color:var(--ink);color:var(--ink)}
+
+/* ---- chat ---- */
+.chat{display:flex;flex-direction:column;gap:11px;max-height:320px;overflow-y:auto;padding-right:4px}
+.msg{display:flex;gap:10px}
+.msg .bub{flex:1;min-width:0}
+.msg .bub .mh{display:flex;align-items:baseline;gap:7px;margin-bottom:3px}
+.msg .bub .mh b{font-size:12px;font-weight:600;color:var(--ink)}
+.msg .bub .mh span{font-family:var(--mono);font-size:9px;color:var(--tx-3);letter-spacing:.04em}
+.msg .bub .mt{
+  font-size:12.5px;line-height:1.5;color:var(--tx-2);
+  background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:8px 11px;
+}
+.msg.mine .bub .mt{background:rgba(0,113,227,.05);border-color:rgba(0,113,227,.25);color:var(--ink)}
+.msg .bub .mt .mention{color:var(--acc);font-weight:600}
+.askbar{display:flex;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid var(--line)}
+.askbar textarea{flex:1;resize:vertical;min-height:38px;max-height:130px;font-size:12.5px;line-height:1.45}
+.quickq{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.quickq button{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;padding:4px 8px;
+  border:1px solid var(--line);color:var(--tx-3);border-radius:3px;transition:.15s;background:var(--bg);
+}
+.quickq button:hover{border-color:var(--acc);color:var(--acc)}
+
+/* ---- facts grid ---- */
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.fact{background:var(--bg);padding:9px 11px}
+.fact .k{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx-3);display:block;margin-bottom:4px}
+.fact .v{font-size:12.5px;font-weight:600;word-break:break-word;color:var(--ink)}
+.fact .v.mono{font-family:var(--mono);font-size:11.5px;font-weight:500}
+.fact .v.dim{color:var(--tx-3);font-weight:400}
+.revbars{display:flex;gap:5px;align-items:center;margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--tx-3)}
+.revbars b{color:var(--tx-2)}
+
+/* ============ KANBAN ============ */
+.board{display:flex;gap:11px;overflow-x:auto;padding-bottom:12px;align-items:stretch}
+.col{flex:0 0 224px;display:flex;flex-direction:column;background:var(--s1);border:1px solid var(--line);border-radius:var(--r);min-height:120px}
+.col-h{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--s1);z-index:2;border-radius:var(--r) var(--r) 0 0}
+.col-h .sq{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.col-h b{flex:1;font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx-2);min-width:0}
+.col-h .c{font-family:var(--mono);font-size:10px;color:var(--tx-2);background:var(--s3);padding:0 6px;border-radius:3px}
+.col-b{padding:9px;display:flex;flex-direction:column;gap:8px;flex:1}
+.mini{
+  background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:10px;
+  text-align:left;width:100%;transition:.15s;position:relative;box-shadow:var(--sh);
+}
+.mini:hover{border-color:var(--acc);box-shadow:0 3px 10px rgba(37,40,42,.08)}
+.mini.blk{border-color:var(--ink);
+  background-image:repeating-linear-gradient(45deg,rgba(37,40,42,.035) 0 7px,transparent 7px 14px)}
+.mini b{display:block;font-size:12.5px;font-weight:700;line-height:1.25;margin-bottom:3px;color:var(--ink)}
+.mini .t{font-family:var(--mono);font-size:9.5px;color:var(--tx-3);letter-spacing:.03em;display:block;margin-bottom:8px}
+.mini .f{display:flex;align-items:center;justify-content:space-between;gap:7px}
+.mini .f .who2{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--tx-2);min-width:0}
+.mini .f .who2 .av{width:17px;height:17px;font-size:8px;border-radius:4px}
+.col-empty{padding:18px 10px;text-align:center;font-family:var(--mono);font-size:9.5px;color:var(--tx-3);letter-spacing:.07em}
+
+/* ============ ANALYTICS ============ */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;margin-bottom:14px}
+.panel{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh)}
+.panel-h{display:flex;align-items:baseline;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.panel-h h3{font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tx-2)}
+.panel-h .hint{font-family:var(--mono);font-size:9.5px;color:var(--tx-3);margin-left:auto;text-align:right;line-height:1.5}
+.panel-b{padding:16px}
+
+.hbars{display:flex;flex-direction:column;gap:10px}
+.hbar{display:grid;grid-template-columns:118px 1fr 62px;align-items:center;gap:11px}
+.hbar .nm{font-size:11.5px;color:var(--tx-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .tr{display:block;height:16px;background:var(--s2);border-radius:3px;position:relative;overflow:hidden}
+.hbar .fl{display:block;height:100%;min-width:2px;background:var(--c,var(--acc));border-radius:3px;position:relative}
+.hbar .vv{font-family:var(--mono);font-size:11px;text-align:right;color:var(--ink)}
+.hbar .vv s{text-decoration:none;color:var(--tx-3);font-size:9.5px}
+.thresh{position:absolute;top:0;bottom:0;width:1px;background:var(--ink);opacity:.55}
+
+.dtable{width:100%;border-collapse:collapse;font-size:12px}
+.dtable th{
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--tx-3);
+  text-align:right;padding:0 9px 9px;border-bottom:1px solid var(--line-2);font-weight:500;white-space:nowrap;
+}
+.dtable th:first-child{text-align:left}
+.dtable td{padding:9px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--tx-2)}
+.dtable td:first-child{text-align:left;font-family:var(--sans);font-weight:600;color:var(--ink)}
+.dtable tr:last-child td{border-bottom:none}
+.dtable tr:hover td{background:var(--s1)}
+.pill{display:inline-block;font-family:var(--mono);font-size:10px;padding:1px 7px;border-radius:3px}
+.pill.g{background:rgba(0,113,227,.09);color:var(--acc)}
+.pill.y{background:var(--s3);color:var(--tx-2)}
+.pill.r{background:var(--ink);color:#fff}
+.wip{display:inline-flex;gap:2px;align-items:center}
+.wip i{width:5px;height:13px;background:var(--acc);border-radius:1px;opacity:.55}
+.wip i.over{background:var(--ink);opacity:1}
+
+.funnel{display:flex;flex-direction:column;gap:6px}
+.fstep{display:grid;grid-template-columns:150px 1fr 34px;align-items:center;gap:11px}
+.fstep .nm{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--tx-3);text-align:right}
+.fstep .tr2{display:block;height:24px;background:var(--s2);border-radius:3px;overflow:hidden}
+.fstep .fl2{display:block;height:100%;min-width:3px;background:var(--c,var(--acc));border-radius:3px}
+.fstep .vv2{font-family:var(--mono);font-size:12px;color:var(--ink);text-align:right}
+
+.months{display:flex;align-items:flex-end;gap:6px;height:124px}
+.mcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;position:relative}
+.mcol .stk{display:flex;flex-direction:column-reverse;gap:1px;justify-content:flex-start}
+.mcol .seg{width:100%;border-radius:1px}
+.mcol .lb2{font-family:var(--mono);font-size:8.5px;color:var(--tx-3);text-align:center;letter-spacing:.04em;padding-top:6px;border-top:1px solid var(--line-2);margin-top:5px}
+.mcol:hover .seg{opacity:.75}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.legend span{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9.5px;color:var(--tx-3);letter-spacing:.05em;text-transform:uppercase}
+.legend i{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+.alerts{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.alert{display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--bg);text-align:left;width:100%;transition:.15s}
+.alert:hover{background:var(--s1)}
+.alert .sev{width:3px;align-self:stretch;flex-shrink:0;border-radius:2px}
+.alert .bd2{flex:1;min-width:0}
+.alert .bd2 b{display:block;font-size:12.5px;font-weight:600;color:var(--ink)}
+.alert .bd2 span{display:block;font-family:var(--mono);font-size:10px;color:var(--tx-3);margin-top:3px}
+.alert .rt{font-family:var(--mono);font-size:10px;color:var(--tx-2);text-align:right;flex-shrink:0}
+
+/* ============ MODAL ============ */
+.ovl{
+  position:fixed;inset:0;z-index:200;background:rgba(37,40,42,.3);backdrop-filter:blur(4px);
+  display:grid;place-items:center;padding:20px;animation:fade .18s ease-out;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--bg);border:1px solid var(--line-2);border-radius:10px;
+  width:100%;max-width:560px;max-height:88vh;overflow-y:auto;
+  box-shadow:var(--sh-lg);animation:rise .22s cubic-bezier(.2,.8,.3,1);
+}
+.modal.wide{max-width:740px}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.modal-h{display:flex;align-items:center;gap:11px;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:2;border-radius:10px 10px 0 0}
+.modal-h h3{flex:1;font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
+.modal-h .x{width:27px;height:27px;display:grid;place-items:center;border:1px solid var(--line);border-radius:5px;color:var(--tx-3);font-size:14px;line-height:1}
+.modal-h .x:hover{border-color:var(--acc);color:var(--acc)}
+.modal-b{padding:20px}
+.modal-f{display:flex;gap:8px;justify-content:flex-end;padding:15px 20px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--bg);border-radius:0 0 10px 10px}
+.frow{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:13px;margin-bottom:13px}
+.f1{display:flex;flex-direction:column;gap:6px}
+.f1>span{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx-3)}
+.f1>span em{font-style:normal;color:var(--acc)}
+.f1 input,.f1 select,.f1 textarea{width:100%}
+.hintline{font-family:var(--mono);font-size:10px;color:var(--tx-3);line-height:1.6;margin-top:-2px;margin-bottom:13px}
+.callout{
+  display:flex;gap:11px;padding:13px 14px;border:1px solid var(--line);
+  background:var(--s1);font-size:12.5px;line-height:1.55;color:var(--tx-2);margin-bottom:15px;border-radius:5px;
+}
+.callout.warn{background:var(--s2);border-color:var(--line-2)}
+.callout.bad{background:var(--s2);border-color:var(--ink)}
+.callout b{color:var(--ink)}
+pre.sql{
+  background:var(--s2);border:1px solid var(--line);border-radius:5px;padding:13px;
+  font-family:var(--mono);font-size:10.5px;line-height:1.65;color:var(--tx-2);overflow-x:auto;
+  max-height:260px;overflow-y:auto;white-space:pre;
+}
+.steps{counter-reset:s;display:flex;flex-direction:column;gap:12px;margin-bottom:15px}
+.steps li{list-style:none;counter-increment:s;display:flex;gap:12px;font-size:12.5px;line-height:1.6;color:var(--tx-2)}
+.steps li::before{
+  content:counter(s);flex-shrink:0;width:21px;height:21px;display:grid;place-items:center;
+  font-family:var(--mono);font-size:10px;font-weight:600;color:#fff;background:var(--acc);
+  border-radius:50%;margin-top:1px;
+}
+.steps li b{color:var(--ink)}
+
+/* ============ SIGN-IN GATE ============ */
+.gate{min-height:100vh;display:grid;place-items:center;padding:26px;position:relative;z-index:1}
+.gate-box{width:100%;max-width:560px}
+.gate-mark{display:flex;align-items:center;gap:13px;margin-bottom:28px}
+.gate-mark .brand-mark{width:30px;height:30px}
+.gate-mark b{font-size:15px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;display:block;line-height:1.2;color:var(--ink)}
+.gate-mark span{font-family:var(--mono);font-size:10px;color:var(--tx-3);letter-spacing:.12em;text-transform:uppercase}
+.gate h1{font-size:27px;font-weight:700;letter-spacing:-.03em;line-height:1.18;margin-bottom:9px;color:var(--ink)}
+.gate h1 em{font-style:normal;color:var(--acc)}
+.gate p.sub{font-size:13px;color:var(--tx-2);line-height:1.6;margin-bottom:24px}
+.gate-card{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:6px;box-shadow:var(--sh)}
+.rgroup{border-bottom:1px solid var(--line)}
+.rgroup:last-child{border-bottom:none}
+.rgroup-h{display:flex;align-items:center;gap:9px;padding:11px 14px 8px}
+.rgroup-h b{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--tx-3)}
+.rgroup-h .rule{flex:1;height:1px;background:var(--line)}
+.rgroup-h em{font-style:normal;font-family:var(--mono);font-size:9px;color:var(--tx-3);letter-spacing:.04em}
+.people{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 10px 12px}
+.person{
+  display:flex;align-items:center;gap:9px;text-align:left;
+  padding:9px 11px;border:1px solid var(--line);border-radius:5px;background:var(--bg);transition:.15s;
+}
+.person:hover{border-color:var(--line-2);background:var(--s1)}
+.person.on{border-color:var(--acc);background:rgba(0,113,227,.05);box-shadow:0 0 0 3px rgba(0,113,227,.1)}
+.person b{font-size:12.5px;font-weight:600;color:var(--ink)}
+.person.on b{color:var(--acc)}
+.person .av{width:26px;height:26px;font-size:10px}
+.person.on .av{border-color:var(--acc);color:var(--acc)}
+
+/* toast */
+.toasts{position:fixed;bottom:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:9px;max-width:340px}
+.toast{
+  display:flex;gap:10px;padding:12px 14px;background:var(--bg);border:1px solid var(--line-2);
+  border-radius:6px;font-size:12.5px;color:var(--tx-2);
+  box-shadow:var(--sh-lg);animation:slidein .25s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes slidein{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+.toast.ok{border-color:var(--acc)}
+.toast.bad{border-color:var(--ink)}
+.toast b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);color:var(--acc);margin-bottom:3px}
+.toast.ok b{color:var(--acc)}
+.toast.bad b{color:var(--ink)}
+
+.empty{padding:56px 20px;text-align:center;border:1px dashed var(--line-2);border-radius:var(--r);background:var(--s1)}
+.empty h3{font-size:14.5px;font-weight:700;margin-bottom:7px;color:var(--ink)}
+.empty p{font-size:12.5px;color:var(--tx-3);max-width:430px;margin:0 auto 16px;line-height:1.6}
+
+.foot{padding:24px 20px 44px;text-align:center;font-family:var(--mono);font-size:9.5px;color:var(--tx-3);letter-spacing:.08em}
+.foot a{color:var(--tx-2)}
+
+@media (max-width:900px){
+  .topbar{flex-wrap:wrap}
+  .brand{flex:1;border-right:none;height:52px}
+  .topbar-right{border-left:none;padding-right:12px;gap:7px}
+  .tabs{order:3;flex-basis:100%;border-top:1px solid var(--line)}
+  .tab{height:44px;padding:0 14px}
+  .chipset{max-width:100%;overflow-x:auto}
+  .filters{overflow-x:hidden}
+}
+@media (max-width:760px){
+  .wrap{padding:14px}
+  .cards{grid-template-columns:1fr}
+  .brand-txt span{display:none}
+  .hbar{grid-template-columns:92px 1fr 52px}
+  .fstep{grid-template-columns:100px 1fr 30px}
+  .people{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+}
+@media print{body::after{display:none}.topbar,.acts,.tgl,.askbar{display:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toasts" id="toasts"></div>
+<div id="modalroot"></div>
+<script>
+/* ==================================================================
+   SPORTSTECH · CREATIVE OPS — Amazon Creative Pipeline Control
+   Single-file app. Two modes:
+     DEMO  → SUPABASE_URL empty. Seeded sample data, lives in this tab only.
+     LIVE  → fill both values below. Real shared multi-user database.
+   Setup SQL is inside the app: click "SETUP" in the top bar.
+   ================================================================== */
+
+/* ▼▼▼ THE ONLY TWO LINES YOU EVER NEED TO EDIT ▼▼▼ */
+const SUPABASE_URL = "";      // e.g. "https://abcdefgh.supabase.co"
+const SUPABASE_ANON_KEY = ""; // the long "anon public" key
+/* ▲▲▲ Leave both empty = demo mode. Fill both = live shared mode. ▲▲▲ */
+
+const POLL_MS = 6000;   // how often live mode re-checks the database
+const AGE_WARN = 3;     // days in one stage before amber
+const AGE_CRIT = 6;     // days in one stage before red
+const WIP_LIMIT = 3;    // active projects per designer before it flags
+
+/* ============================ STAGES ============================ */
+/* Colour carries meaning, inside the two-colour system:
+   accent blue deepens as the project advances  ·  solid ink = a backwards loop
+   mid grey = waiting on someone outside the team (Amazon) */
+const INK='#25282A', GREY='#8E9294';
+const STAGES = [
+  {id:'product',  n:1,  label:'Product Selected',        short:'Product',        owner:'pm',       c:'#C7DFF8'},
+  {id:'concept',  n:2,  label:'Concept Development',     short:'Concept',        owner:'designer', c:'#ADD0F4'},
+  {id:'design',   n:3,  label:'Design',                  short:'Design',         owner:'designer', c:'#93C2F1'},
+  {id:'lead_rev', n:4,  label:'Review · Team Lead',      short:'Lead Review',    owner:'lead',     c:'#79B3EE'},
+  {id:'lead_fix', n:5,  label:'Revision · Lead Notes',   short:'Lead Revision',  owner:'designer', c:INK},
+  {id:'head_rev', n:6,  label:'Review · Team Head',      short:'Head Review',    owner:'head',     c:'#5FA5EA'},
+  {id:'head_fix', n:7,  label:'Revision · Head Notes',   short:'Head Revision',  owner:'designer', c:INK},
+  {id:'live_req', n:8,  label:'Live Request Raised',     short:'Live Request',   owner:'pm',       c:'#4597E7'},
+  {id:'ticket',   n:9,  label:'Ticket Created',          short:'Ticket',         owner:'pm',       c:'#2B88E5'},
+  {id:'amz_rev',  n:10, label:'Amazon Review',           short:'Amazon Review',  owner:'amazon',   c:GREY},
+  {id:'amz_rej',  n:11, label:'Amazon Rejected · Rework',short:'Rejected',       owner:'designer', c:INK},
+  {id:'done',     n:12, label:'Live · Completed',        short:'Live',           owner:'none',     c:'#0071E3'},
+];
+const S = {}; STAGES.forEach(s=>S[s.id]=s);
+const LOOPS = new Set(['lead_fix','head_fix','amz_rej']);   // backward loops
+const RAIL  = ['product','concept','design','lead_rev','head_rev','live_req','ticket','amz_rev','done'];
+
+/* transitions: what each stage can move to, who may do it, and the button style */
+/* WHO MAY MOVE WHAT — a strict hierarchy.
+   D  = the assigned designer only (not another designer's project)
+   L  = the assigned Team Lead only
+   HP = Team Head + Project Manager, who override everything      */
+const D=['designer'], L=['lead'], HP=[];   // HP is implicit: head/pm always pass
+const MOVES = {
+  product:  [{to:'concept',  lb:'Start concept',        st:'pri', roles:D}],
+  concept:  [{to:'design',   lb:'Concept done → design',st:'pri', roles:D}],
+  design:   [{to:'lead_rev', lb:'Submit to Team Lead',  st:'pri', roles:D}],
+  lead_rev: [{to:'head_rev', lb:'Approve → Team Head',  st:'ok',  roles:L},
+             {to:'lead_fix', lb:'Request revision',     st:'warn',roles:L, need:'Corrections for the designer'}],
+  lead_fix: [{to:'lead_rev', lb:'Revision done → Lead', st:'pri', roles:D}],
+  head_rev: [{to:'live_req', lb:'Approve → go live',    st:'ok',  roles:HP},
+             {to:'head_fix', lb:'Request revision',     st:'warn',roles:HP, need:'Corrections for the designer'}],
+  head_fix: [{to:'head_rev', lb:'Revision done → Head', st:'pri', roles:D}],
+  live_req: [{to:'ticket',   lb:'Ticket created',       st:'pri', roles:HP, need:'Ticket ID / link'}],
+  ticket:   [{to:'amz_rev',  lb:'Submitted to Amazon',  st:'pri', roles:HP}],
+  amz_rev:  [{to:'done',     lb:'Amazon approved → LIVE',st:'ok', roles:HP},
+             {to:'amz_rej',  lb:'Amazon rejected',      st:'bad', roles:HP, need:'Amazon rejection reason'}],
+  amz_rej:  [{to:'design',   lb:'Rework design',        st:'pri', roles:D}],
+  done:     [{to:'design',   lb:'Reopen for rework',    st:'gh',  roles:HP, need:'Why is a live asset being reopened?'}],
+};
+
+const ROLES = [
+  {id:'designer', lb:'Designer',        tier:1, d:'own concepts, design & revisions'},
+  {id:'lead',     lb:'Team Lead',       tier:2, d:'first approval gate'},
+  {id:'head',     lb:'Team Head',       tier:3, d:'final gate · full control'},
+  {id:'pm',       lb:'Project Manager', tier:3, d:'live requests, tickets · full control'},
+  {id:'visitor',  lb:'Visitor',          tier:0, d:'read-only — sees everything, changes nothing'},
+];
+/* The team. Only these people can sign in — there is no free-text name box,
+   so nobody can award themselves a role they do not hold. */
+const ROSTER = [
+  {name:'Vishnu Kumar',    role:'designer'},
+  {name:'Vishnu Varthini', role:'designer'},
+  {name:'Onish',           role:'designer'},
+  {name:'Asrafdeen',       role:'designer'},
+  {name:'Abirami',         role:'designer'},
+  {name:'Sanjay Kumar',    role:'lead'},
+  {name:'Vimalraj',        role:'lead'},
+  {name:'Thomas',          role:'head'},
+  {name:'Lingesvar',       role:'head'},
+  {name:'Kowsi',           role:'pm'},
+  {name:'Visitor',         role:'visitor'},
+];
+const TEAM_SIZE = ROSTER.filter(p=>p.role!=='visitor').length;
+const READONLY  = () => !state.user || state.user.role==='visitor';
+const roleOf   = n => (ROSTER.find(p=>p.name===n)||{}).role || 'designer';
+const roleLb   = r => (ROLES.find(x=>x.id===r)||{lb:r}).lb;
+const peopleIn = r => ROSTER.filter(p=>p.role===r).map(p=>p.name);
+const FULL     = () => !!state.user && (state.user.role==='head' || state.user.role==='pm');
+const DTYPES = ['Main Image','Main Gallery','A+ Content','Premium Gallery','Brand Story','Infographic Set','Video','Variation Images'];
+const MARKETS = ['DE','FR','ES','IT','US'];
+const REJECT_REASONS = ['Text/claim not allowed','Image quality / resolution','White background rule','Logo or watermark issue','Wrong product shown','Prohibited claim (health)','Trademark / IP flag','No reason given'];
+
+/* ============================ HELPERS ============================ */
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'x'+Math.random().toString(36).slice(2)+Date.now().toString(36));
+const nowISO = () => new Date().toISOString();
+const DAY = 86400000;
+const daysBetween = (a,b=Date.now()) => Math.max(0,Math.floor((b - new Date(a).getTime())/DAY));
+const hoursBetween = (a,b=Date.now()) => Math.max(0,(b - new Date(a).getTime())/3600000);
+const monthKey = d => { const x=new Date(d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'); };
+const monthLabel = k => { const [y,m]=k.split('-'); return new Date(y,m-1,1).toLocaleDateString('en-GB',{month:'short'})+" '"+String(y).slice(2); };
+function ago(iso){
+  const h = hoursBetween(iso);
+  if(h<1) return Math.max(1,Math.round(h*60))+'m ago';
+  if(h<24) return Math.round(h)+'h ago';
+  const d = Math.round(h/24);
+  return d===1?'yesterday':d+'d ago';
+}
+function fmtDate(iso){ if(!iso) return '—'; return new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}); }
+function fmtStamp(iso){ const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+' · '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function initials(n){ return String(n||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function avColor(n){ let h=0; for(const ch of String(n||'')) h=(h*31+ch.charCodeAt(0))%360; return `hsl(205 7% ${91-(h%4)*4}%)`; }
+const av = n => `<i class="av" style="background:${avColor(n)}" title="${esc(n)}">${esc(initials(n))}</i>`;
+function toast(title,msg,kind=''){
+  const el=document.createElement('div'); el.className='toast '+kind;
+  el.innerHTML=`<div><b>${esc(title)}</b>${esc(msg)}</div>`;
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .3s,transform .3s';el.style.opacity='0';el.style.transform='translateX(20px)';setTimeout(()=>el.remove(),320);},4200);
+}
+function pct(a,b){ return b>0 ? Math.round(a/b*100) : 0; }
+function avg(arr){ return arr.length ? arr.reduce((x,y)=>x+y,0)/arr.length : 0; }
+
+/* who currently holds the ball on a project */
+function ballWith(p){
+  const o = S[p.stage].owner;
+  if(o==='designer') return {name:p.designer||'Unassigned', role:'Designer'};
+  if(o==='lead')     return {name:p.lead||'Team Lead',      role:'Team Lead'};
+  if(o==='head')     return {name:p.head||'Team Head',      role:'Team Head'};
+  if(o==='pm')       return {name:p.pm||'Project Manager',  role:'Project Mgr'};
+  if(o==='amazon')   return {name:'Amazon',                 role:'External'};
+  return {name:'—', role:'Closed'};
+}
+/* One gate for every stage move. Head + PM always pass; everyone else may only
+   act on their OWN gate for their OWN project. */
+function canAct(p,mv){
+  const u=state.user; if(!u) return false;
+  if(u.role==='visitor') return false;
+  if(FULL()) return true;
+  if(!mv.roles.includes(u.role)) return false;
+  if(u.role==='designer') return p.designer===u.name;
+  if(u.role==='lead')     return p.lead===u.name;
+  return false;
+}
+function whyNot(p,mv){
+  const u=state.user;
+  if(mv.roles.length===0) return 'Only the Team Head or Project Manager can do this';
+  if(!mv.roles.includes(u.role)) return 'Only '+mv.roles.map(roleLb).join(' / ')+' · Team Head · Project Manager can do this';
+  if(u.role==='designer') return 'This is '+(p.designer||'another designer')+"'s project — you can only move your own";
+  if(u.role==='lead')     return p.lead+' is the Team Lead on this project, not you';
+  return 'Not permitted';
+}
+const canEdit = p => !READONLY() && (FULL()
+  || (state.user.role==='lead'     && p.lead===state.user.name)
+  || (state.user.role==='designer' && p.designer===state.user.name));
+
+/* ============================ STATE ============================ */
+const state = {
+  user:null, mode:'demo', err:null, view:'pipeline',
+  projects:[], events:[], comments:[],
+  open:new Set(), dtab:{},
+  f:{ q:'', designer:'', dtype:'', market:'', stage:'', month:'', flag:'' },
+  amonth:null,
+};
+const LIVE = () => !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+/* ============================ STORE ============================ */
+const SB_H = () => ({
+  'apikey':SUPABASE_ANON_KEY,
+  'Authorization':'Bearer '+SUPABASE_ANON_KEY,
+  'Content-Type':'application/json',
+  'Prefer':'return=representation'
+});
+async function sb(path,opt={}){
+  const r = await fetch(SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/'+path,{...opt,headers:SB_H()});
+  if(!r.ok) throw new Error('Supabase '+r.status+': '+(await r.text()).slice(0,200));
+  return r.status===204 ? null : r.json();
+}
+
+const Store = {
+  async load(){
+    if(!LIVE()){ if(!state.projects.length) seed(); return; }
+    const [p,e,c] = await Promise.all([
+      sb('projects?select=*&order=created_at.desc'),
+      sb('events?select=*&order=at.asc'),
+      sb('comments?select=*&order=at.asc'),
+    ]);
+    state.projects=p||[]; state.events=e||[]; state.comments=c||[];
+  },
+  async addProject(p){
+    state.projects.unshift(p);
+    if(LIVE()) await sb('projects',{method:'POST',body:JSON.stringify(p)});
+  },
+  async patchProject(id,patch){
+    const p = state.projects.find(x=>x.id===id); if(p) Object.assign(p,patch);
+    if(LIVE()) await sb('projects?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify(patch)});
+  },
+  async addEvent(ev){
+    state.events.push(ev);
+    if(LIVE()) await sb('events',{method:'POST',body:JSON.stringify(ev)});
+  },
+  async addComment(cm){
+    state.comments.push(cm);
+    if(LIVE()) await sb('comments',{method:'POST',body:JSON.stringify(cm)});
+  },
+  async deleteProject(id){
+    state.projects=state.projects.filter(x=>x.id!==id);
+    state.events  =state.events.filter(x=>x.project_id!==id);
+    state.comments=state.comments.filter(x=>x.project_id!==id);
+    state.open.delete(id);
+    if(LIVE()){
+      await sb('comments?project_id=eq.'+encodeURIComponent(id),{method:'DELETE'});
+      await sb('events?project_id=eq.'+encodeURIComponent(id),{method:'DELETE'});
+      await sb('projects?id=eq.'+encodeURIComponent(id),{method:'DELETE'});
+    }
+  },
+};
+
+function logEvent(pid,kind,from,to,note){
+  return Store.addEvent({
+    id:uid(), project_id:pid, at:nowISO(),
+    actor:state.user.name, actor_role:state.user.role,
+    kind, from_stage:from||null, to_stage:to||null, note:note||null
+  });
+}
+
+/* ============================ SEED (demo only) ============================ */
+const TEAM = { designers:peopleIn('designer'), lead:'Sanjay Kumar', head:'Lingesvar', pm:'Kowsi' };
+const L2='Vimalraj', H2='Thomas';   // the second lead / second head, used below
+function seed(){
+  const P=[],E=[],C=[];
+  const mk=(product,asin,dtype,market,designer,stage,ageD,stageD,pri,opts={})=>{
+    const id=uid();
+    const created=new Date(Date.now()-ageD*DAY).toISOString();
+    const pr={id,product,asin,dtype,market,designer,lead:opts.lead||TEAM.lead,head:opts.head||TEAM.head,pm:TEAM.pm,
+      stage,priority:pri,due_date:new Date(Date.now()+(opts.due??7)*DAY).toISOString().slice(0,10),
+      created_at:created,stage_since:new Date(Date.now()-stageD*DAY).toISOString(),
+      ticket_id:opts.ticket||'',ticket_url:'',brief_url:'',work_url:'',
+      blocked:!!opts.block,block_reason:opts.block||'',
+      rev_lead:opts.rl||0,rev_head:opts.rh||0,rev_amz:opts.ra||0};
+    P.push(pr);
+    /* Place the trail between created_at and the moment the current stage began, so the
+       activity log and the "Xd in stage" counter can never contradict each other.
+       The numbers in each trail row are relative weights, not absolute days. */
+    const specs=[['create',null,'product',TEAM.pm,'pm','Product selected for '+dtype+' ('+market+')',0]];
+    (opts.trail||[]).forEach(s=>specs.push(['stage',s[0],s[1],s[2],s[3],s[4],s[5]??1]));
+    const start=new Date(created).getTime();
+    const end=Date.now()-stageD*DAY;
+    pr.stage_since=new Date(end).toISOString();
+    const gaps=specs.map((s,i)=>i===0?0:(s[6]||1));
+    const total=gaps.reduce((a,b)=>a+b,0);
+    let cum=0;
+    specs.forEach((s,i)=>{
+      cum+=gaps[i];
+      const at=total>0?start+(end-start)*(cum/total):start;
+      E.push({id:uid(),project_id:id,at:new Date(at).toISOString(),
+        actor:s[3],actor_role:s[4],kind:s[0],from_stage:s[1],to_stage:s[2],note:s[5]||null});
+    });
+    (opts.chat||[]).forEach((m,i)=>C.push({id:uid(),project_id:id,at:new Date(Date.now()-(opts.chat.length-i)*0.4*DAY).toISOString(),actor:m[0],actor_role:m[1],text:m[2]}));
+    return id;
+  };
+  const D=TEAM.designers;
+  mk('WP300 Walking Pad','B0C4WP3001','Main Gallery','DE',D[0],'lead_rev',11,1,'high',{due:3,rl:0,
+    trail:[['product','concept',D[0],'designer','7 concept routes drafted, benefit-led angle chosen',1],
+           ['concept','design',D[0],'designer','Concept approved internally, moving into design',2],
+           ['design','lead_rev',D[0],'designer','All 7 slides done, mobile-legibility pass complete',6]],
+    chat:[[TEAM.head,'head','Is the app slide in this set? Sportstech Live has to be slot 3.'],[D[0],'designer','Yes — slot 3 is the STL app slide, screenshots are the current build.']]});
+
+  mk('F37s Laufband','B0B7F37S01','A+ Content','DE',D[1],'lead_fix',19,2,'high',{due:2,rl:1,
+    trail:[['product','concept',D[1],'designer','Module structure mapped to the 7 fixed A+ modules',2],
+           ['concept','design',D[1],'designer','Copy locked with SEO, building modules',3],
+           ['design','lead_rev',D[1],'designer','All 7 modules built, German copy proofed',7],
+           ['lead_rev','lead_fix',TEAM.lead,'lead','Comparison module: competitor column is unfair and the incline spec contradicts the spec sheet (12% vs 15%). Fix both before it goes to Lingesvar.',4]],
+    chat:[[TEAM.lead,'lead','Incline number has to match the ERP spec exactly — HWG risk if we overstate it.'],[D[1],'designer','Corrected to 15%, re-checking the comparison table now.']]});
+
+  mk('ESX500 Crosstrainer','B08ESX5001','Main Image','DE',D[2],'head_rev',24,4,'high',{due:1,rl:1,
+    trail:[['product','concept',D[2],'designer','3 main-image routes: hero angle, scale reference, feature-led',1],
+           ['concept','design',D[2],'designer','Hero angle chosen for CTR',2],
+           ['design','lead_rev',D[2],'designer','Main image on pure white, 85% frame fill',5],
+           ['lead_rev','lead_fix',TEAM.lead,'lead','Frame fill too tight, console not readable at mobile size',3],
+           ['lead_fix','lead_rev',D[2],'designer','Reframed to 88%, console enlarged',2],
+           ['lead_rev','head_rev',TEAM.lead,'lead','Approved — clean and compliant',1]],
+    chat:[[TEAM.head,'head','Why is this sitting 4 days with me? Ping me next time, I missed it.']]});
+
+  mk('ROWX700 Rudergerät','B09ROW7001','Premium Gallery','DE',D[3],'amz_rej',38,2,'high',{due:1,rl:1,rh:1,ra:1,ticket:'CS-88421',
+    trail:[['product','concept',D[3],'designer','Glassy-card feature overview, 7 features from spec doc',2],
+           ['concept','design',D[3],'designer','Icon set + card system built',3],
+           ['design','lead_rev',D[3],'designer','7 feature cards complete',6],
+           ['lead_rev','lead_fix',TEAM.lead,'lead','Icon weights inconsistent across cards',2],
+           ['lead_fix','lead_rev',D[3],'designer','Icons unified to 2px stroke',2],
+           ['lead_rev','head_rev',TEAM.lead,'lead','Approved',1],
+           ['head_rev','head_fix',TEAM.head,'head','Card 5 claim "verbrennt 800 kcal" is not defensible — remove it',2],
+           ['head_fix','head_rev',D[3],'designer','Claim removed, replaced with resistance levels',2],
+           ['head_rev','live_req',TEAM.head,'head','Approved for live',1],
+           ['live_req','ticket',TEAM.pm,'pm','Case CS-88421 opened with Seller Support',1],
+           ['ticket','amz_rev',TEAM.pm,'pm','Uploaded to amazon.de',1],
+           ['amz_rev','amz_rej',TEAM.pm,'pm','REJECTED — Text/claim not allowed. Amazon flagged the wording on card 2 as a health claim.',3]],
+    chat:[[TEAM.pm,'pm','Amazon rejected card 2. @Asrafdeen we need it reworded, not just resized.'],[D[3],'designer','On it — rewriting card 2 without the health wording.'],[TEAM.head,'head','Keep it factual: resistance levels and stroke length only.']]});
+
+  mk('DFT200 Vibrationsplatte','B07DFT2001','Main Gallery','DE',D[0],'done',26,3,'med',{due:-6,rl:1,rh:0,ticket:'CS-87990',
+    trail:[['product','concept',D[0],'designer','Concept set built from review mining',2],
+           ['concept','design',D[0],'designer','Design started',2],
+           ['design','lead_rev',D[0],'designer','Gallery complete',6],
+           ['lead_rev','lead_fix',TEAM.lead,'lead','Slide 4 text too small on mobile',2],
+           ['lead_fix','lead_rev',D[0],'designer','Text scaled up 40%',1],
+           ['lead_rev','head_rev',TEAM.lead,'lead','Approved',1],
+           ['head_rev','live_req',TEAM.head,'head','Approved, strong set',2],
+           ['live_req','ticket',TEAM.pm,'pm','Case CS-87990 opened',1],
+           ['ticket','amz_rev',TEAM.pm,'pm','Submitted',1],
+           ['amz_rev','done',TEAM.pm,'pm','APPROVED — live on amazon.de',4]]});
+
+  mk('SX600 Speedbike','B0A6SX6001','Main Gallery','DE',D[1],'done',17,2,'high',{due:-4,rl:0,rh:0,ticket:'CS-88102',
+    trail:[['product','concept',D[1],'designer','Concepts from SQP keyword intent',1],
+           ['concept','design',D[1],'designer','Design started',2],
+           ['design','lead_rev',D[1],'designer','Gallery complete',5],
+           ['lead_rev','head_rev',TEAM.lead,'lead','Approved first pass — no notes',1],
+           ['head_rev','live_req',TEAM.head,'head','Approved first pass',1],
+           ['live_req','ticket',TEAM.pm,'pm','Case CS-88102 opened',1],
+           ['ticket','amz_rev',TEAM.pm,'pm','Submitted',1],
+           ['amz_rev','done',TEAM.pm,'pm','APPROVED — live',3]]});
+
+  mk('HGX200 Kraftstation','B0BHGX2001','A+ Content','DE',D[2],'design',9,5,'med',{due:6,lead:L2,head:H2,
+    trail:[['product','concept',D[2],'designer','Module plan drafted',2],
+           ['concept','design',D[2],'designer','Concept signed off, designing modules',2]],
+    chat:[[TEAM.lead,'lead','How far are you on the storage module?'],[D[2],'designer','Module 3 done, module 4 mechanism animation frames in progress.']]});
+
+  mk('KRX3 Kraftturm','B0CKRX3001','Brand Story','DE',D[4],'concept',5,3,'low',{due:12,lead:L2,head:H2,
+    trail:[['product','concept',D[3],'designer','Founder story angle being researched',2]]});
+
+  mk('MS300 Massagepistole','B0DMS3001','Infographic Set','DE',D[0],'ticket',31,8,'med',{due:2,rl:1,rh:0,ticket:'CS-88510',
+    trail:[['product','concept',D[0],'designer','6 infographics scoped',1],
+           ['concept','design',D[0],'designer','Design started',2],
+           ['design','lead_rev',D[0],'designer','Set complete',5],
+           ['lead_rev','lead_fix',TEAM.lead,'lead','Amplitude figure needs the ERP source',2],
+           ['lead_fix','lead_rev',D[0],'designer','Figure corrected to spec sheet',1],
+           ['lead_rev','head_rev',TEAM.lead,'lead','Approved',1],
+           ['head_rev','live_req',TEAM.head,'head','Approved',2],
+           ['live_req','ticket',TEAM.pm,'pm','Case CS-88510 opened with Seller Support',2]]});
+
+  mk('EX10 Ergometer','B09EX10001','Main Gallery','FR',D[1],'head_fix',27,9,'med',{due:0,rl:1,rh:1,
+    block:'Waiting on the French copy sign-off from the FR market owner — nobody assigned since 24 July.',
+    trail:[['product','concept',D[1],'designer','FR adaptation of the DE gallery',1],
+           ['concept','design',D[1],'designer','Design adaptation started',2],
+           ['design','lead_rev',D[1],'designer','FR gallery adapted',5],
+           ['lead_rev','lead_fix',TEAM.lead,'lead','French copy reads machine-translated on slides 2 and 5',3],
+           ['lead_fix','lead_rev',D[1],'designer','Copy revised',2],
+           ['lead_rev','head_rev',TEAM.lead,'lead','Approved pending native check',1],
+           ['head_rev','head_fix',TEAM.head,'head','Needs a native FR speaker to sign the copy before I approve',5]],
+    chat:[[TEAM.pm,'pm','Who owns FR copy sign-off? This has been stuck 9 days.'],[TEAM.head,'head','Nobody assigned. That is the blocker — not the design.']]});
+
+  mk('BRT100 Rudergerät','B08BRT1001','Variation Images','DE',D[4],'live_req',22,3,'low',{due:4,rl:0,rh:0,
+    trail:[['product','concept',D[2],'designer','Colour variation set scoped',1],
+           ['concept','design',D[2],'designer','Design started',2],
+           ['design','lead_rev',D[2],'designer','All variants rendered',4],
+           ['lead_rev','head_rev',TEAM.lead,'lead','Approved first pass',1],
+           ['head_rev','live_req',TEAM.head,'head','Approved — PM please raise the request',2]]});
+
+  mk('F37s Laufband','B0B7F37S01','Video','DE',D[4],'product',2,2,'med',{due:18,lead:L2,head:H2,
+    trail:[]});
+
+  mk('ESX500 Crosstrainer','B08ESX5001','A+ Content','ES',D[0],'done',45,6,'low',{due:-14,rl:1,rh:1,ra:1,ticket:'CS-87551',
+    trail:[['product','concept',D[0],'designer','ES adaptation scoped',2],
+           ['concept','design',D[0],'designer','Design started',2],
+           ['design','lead_rev',D[0],'designer','Modules adapted',6],
+           ['lead_rev','lead_fix',TEAM.lead,'lead','Spanish typography breaking on module 5',2],
+           ['lead_fix','lead_rev',D[0],'designer','Fixed',2],
+           ['lead_rev','head_rev',TEAM.lead,'lead','Approved',1],
+           ['head_rev','head_fix',TEAM.head,'head','Comparison module needs ES competitor set, not the DE one',3],
+           ['head_fix','head_rev',D[0],'designer','ES competitors swapped in',3],
+           ['head_rev','live_req',TEAM.head,'head','Approved',1],
+           ['live_req','ticket',TEAM.pm,'pm','Case CS-87551 opened',2],
+           ['ticket','amz_rev',TEAM.pm,'pm','Submitted to amazon.es',1],
+           ['amz_rev','amz_rej',TEAM.pm,'pm','REJECTED — Image quality / resolution below requirement on module 2',3],
+           ['amz_rej','design',D[0],'designer','Re-exported at 2x resolution',2],
+           ['design','lead_rev',D[0],'designer','Resubmitted',1],
+           ['lead_rev','head_rev',TEAM.lead,'lead','Approved',1],
+           ['head_rev','live_req',TEAM.head,'head','Approved',1],
+           ['live_req','ticket',TEAM.pm,'pm','Case reopened',1],
+           ['ticket','amz_rev',TEAM.pm,'pm','Resubmitted',1],
+           ['amz_rev','done',TEAM.pm,'pm','APPROVED — live on amazon.es',4]]});
+
+  state.projects=P; state.events=E; state.comments=C;
+}
+
+/* ============================ DERIVED ============================ */
+const evOf = pid => state.events.filter(e=>e.project_id===pid).sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+const cmOf = pid => state.comments.filter(c=>c.project_id===pid).sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+const lastEv = pid => { const e=evOf(pid); return e[e.length-1]||null; };
+const isActive = p => p.stage!=='done';
+const isOverdue = p => isActive(p) && p.due_date && new Date(p.due_date).getTime() < Date.now()-DAY;
+
+function filtered(){
+  const f=state.f, q=f.q.trim().toLowerCase();
+  return state.projects.filter(p=>{
+    if(q && !(p.product+' '+p.asin+' '+p.dtype+' '+p.designer+' '+(p.ticket_id||'')).toLowerCase().includes(q)) return false;
+    if(f.designer && p.designer!==f.designer) return false;
+    if(f.dtype && p.dtype!==f.dtype) return false;
+    if(f.market && p.market!==f.market) return false;
+    if(f.stage && p.stage!==f.stage) return false;
+    if(f.month && monthKey(p.created_at)!==f.month) return false;
+    if(f.flag==='blocked' && !p.blocked) return false;
+    if(f.flag==='overdue' && !isOverdue(p)) return false;
+    if(f.flag==='stale' && !(isActive(p) && daysBetween(p.stage_since)>=AGE_CRIT)) return false;
+    if(f.flag==='mine' && !(p.designer===state.user.name||p.lead===state.user.name||p.head===state.user.name||p.pm===state.user.name)) return false;
+    if(f.flag==='ball' && ballWith(p).name!==state.user.name) return false;
+    if(f.flag==='active' && !isActive(p)) return false;
+    return true;
+  }).sort((a,b)=>{
+    const sc = x => (x.blocked?0:1)*100 + (isOverdue(x)?0:1)*10 + (isActive(x)?0:1);
+    return sc(a)-sc(b) || daysBetween(b.stage_since)-daysBetween(a.stage_since);
+  });
+}
+
+function stageDurations(list){
+  const ids = new Set(list.map(p=>p.id));
+  const byP={}; state.events.forEach(e=>{ if(ids.has(e.project_id)) (byP[e.project_id]=byP[e.project_id]||[]).push(e); });
+  const out={}; STAGES.forEach(s=>out[s.id]=[]);
+  Object.entries(byP).forEach(([pid,evs])=>{
+    evs.sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+    for(let i=0;i<evs.length-1;i++){
+      const st=evs[i].to_stage; if(!st||!out[st]) continue;
+      out[st].push((new Date(evs[i+1].at)-new Date(evs[i].at))/DAY);
+    }
+    const last=evs[evs.length-1], p=state.projects.find(x=>x.id===pid);
+    if(p && last && last.to_stage && p.stage!=='done' && out[last.to_stage]) out[last.to_stage].push((Date.now()-new Date(last.at))/DAY);
+  });
+  return out;
+}
+
+function monthMetrics(mk){
+  const inM = e => monthKey(e.at)===mk;
+  const st = state.events.filter(e=>e.kind==='stage');
+  const live      = st.filter(e=>e.to_stage==='done' && inM(e));
+  const submits   = st.filter(e=>e.to_stage==='lead_rev' && inM(e));
+  const designs   = st.filter(e=>e.to_stage==='lead_rev' && e.from_stage==='design' && inM(e));
+  const leadRev   = st.filter(e=>e.to_stage==='lead_fix' && inM(e));
+  const headRev   = st.filter(e=>e.to_stage==='head_fix' && inM(e));
+  const rejects   = st.filter(e=>e.to_stage==='amz_rej' && inM(e));
+  const leadPass  = st.filter(e=>e.from_stage==='lead_rev' && e.to_stage==='head_rev' && inM(e));
+  const headPass  = st.filter(e=>e.from_stage==='head_rev' && e.to_stage==='live_req' && inM(e));
+  const started   = state.projects.filter(p=>monthKey(p.created_at)===mk);
+  const cycles = live.map(e=>{
+    const p=state.projects.find(x=>x.id===e.project_id);
+    return p ? (new Date(e.at)-new Date(p.created_at))/DAY : null;
+  }).filter(x=>x!=null);
+  return {
+    mk, live:live.length, submits:submits.length, designs:designs.length,
+    leadRev:leadRev.length, headRev:headRev.length, rejects:rejects.length,
+    leadPass:leadPass.length, headPass:headPass.length, started:started.length,
+    cycle:avg(cycles),
+    firstPass:pct(leadPass.length, leadPass.length+leadRev.length),
+    amzApproval:pct(live.length, live.length+rejects.length),
+  };
+}
+function monthsAvailable(){
+  const ks=new Set(state.projects.map(p=>monthKey(p.created_at)));
+  state.events.forEach(e=>ks.add(monthKey(e.at)));
+  return [...ks].sort();
+}
+
+/* ============================ RENDER: shell ============================ */
+function render(){
+  if(!state.user){ $('#app').innerHTML = gate(); return; }
+  const list = filtered();
+  const act = state.projects.filter(isActive);
+  const blocked = state.projects.filter(p=>p.blocked);
+  const mine = state.projects.filter(p=>ballWith(p).name===state.user.name && isActive(p));
+  $('#app').innerHTML = `
+  <div class="topbar">
+    <div class="brand"><div class="brand-mark"></div>
+      <div class="brand-txt"><b>Sportstech</b><span>Creative Ops</span></div></div>
+    <div class="tabs">
+      <button class="tab ${state.view==='pipeline'?'on':''}" data-view="pipeline">Pipeline <span class="cnt">${act.length}</span></button>
+      <button class="tab ${state.view==='board'?'on':''}" data-view="board">Board</button>
+      <button class="tab ${state.view==='perf'?'on':''}" data-view="perf">Performance</button>
+      <button class="tab ${state.view==='attn'?'on':''}" data-view="attn">Needs attention <span class="cnt">${attnRed()}</span></button>
+    </div>
+    <div class="topbar-right">
+      <button class="btn sm gh" data-act="setup">Setup</button>
+      ${READONLY()?'':`<button class="btn pri sm" data-act="new">+ New project</button>`}
+      <button class="who" data-act="who">${av(state.user.name)}
+        <span class="who-t"><b>${esc(state.user.name)}</b><span>${esc(roleLb(state.user.role))}${READONLY()?' · read-only':mine.length?' · '+mine.length+' on you':''}</span></span></button>
+    </div>
+  </div>
+  ${modeStrip()}
+  ${READONLY()?`<div class="modestrip"><i class="dot" style="background:var(--tx-3)"></i>
+    <b>Read-only</b><span class="sep">│</span>You are in as a Visitor — open any project, log, chat or chart, but nothing here can be changed.<span class="sep">│</span>
+    <button class="btn sm gh" data-act="who">Sign in as yourself →</button></div>`:''}
+  <div class="wrap">
+    ${state.view==='pipeline'?viewPipeline(list):''}
+    ${state.view==='board'?viewBoard(list):''}
+    ${state.view==='perf'?viewPerf(list):''}
+    ${state.view==='attn'?viewAttn():''}
+  </div>
+  <div class="foot">Sportstech Creative Ops · ${STAGES.length}-stage Amazon creative pipeline · ${LIVE()?'live database':'demo mode'} · ${esc(new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'}))}</div>`;
+}
+
+function modeStrip(){
+  if(state.err) return `<div class="modestrip err"><i class="dot" style="background:var(--bad)"></i>
+    <b>Database error</b><span class="sep">│</span>${esc(state.err)}<span class="sep">│</span>
+    <button class="btn sm bad" data-act="setup">Check setup</button></div>`;
+  if(LIVE()) return `<div class="modestrip live"><i class="dot pulse" style="background:var(--ok)"></i>
+    <b>Live · shared</b><span class="sep">│</span>All ${state.projects.length} projects synced from your database, refreshing every ${POLL_MS/1000}s<span class="sep">│</span>
+    <span style="color:var(--tx-3)">last check ${esc(new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}))}</span></div>`;
+  return `<div class="modestrip demo"><i class="dot" style="background:var(--warn)"></i>
+    <b>Demo mode</b><span class="sep">│</span>Sample data. Everything you type stays in this browser tab only — nobody else sees it and a refresh resets it.<span class="sep">│</span>
+    <button class="btn sm warn" data-act="setup">Make it shared →</button></div>`;
+}
+
+/* ============================ RENDER: gate ============================ */
+const GRP=[['designer','Designers'],['lead','Team Leads'],['head','Team Heads'],['pm','Project Manager'],['visitor','Or just look around']];
+function peoplePicker(){
+  return GRP.map(([r,lb])=>`<div class="rgroup">
+    <div class="rgroup-h"><b>${lb}</b><span class="rule"></span><em>${esc((ROLES.find(x=>x.id===r)||{}).d||'')}</em></div>
+    <div class="people">${peopleIn(r).map(n=>`<button class="person ${state.user&&state.user.name===n?'on':''}" data-signin="${esc(n)}">${av(n)}<b>${esc(n)}</b></button>`).join('')}</div>
+  </div>`).join('');
+}
+function gate(){
+  return `<div class="gate"><div class="gate-box">
+    <div class="gate-mark"><div class="brand-mark"></div>
+      <div><b>Sportstech</b><span>Creative Ops · Amazon Pipeline</span></div></div>
+    <h1>Sign in as <em>yourself</em>.</h1>
+    <p class="sub">Pick your name — your role comes with it. There is no name box and no role picker, so nobody can award themselves an approval they do not hold. A designer cannot pass the Team Lead's gate, and a Team Lead cannot pass the Team Head's. The Team Head and the Project Manager override everything. Anyone who only needs to look can enter as a <b>Visitor</b> — every project, log and chart is visible, and nothing can be touched.</p>
+    <div class="gate-card">${peoplePicker()}</div>
+  </div></div>`;
+}
+
+/* ============================ RENDER: pipeline ============================ */
+function filterBar(){
+  const designers=[...new Set(state.projects.map(p=>p.designer))].filter(Boolean).sort();
+  const f=state.f;
+  const flag=(k,l,alarm)=>`<button data-flag="${k}" class="${f.flag===k?'on'+(alarm?' alarm':''):''}">${l}</button>`;
+  return `<div class="filters">
+    <input type="search" id="f-q" placeholder="Search product, ASIN, ticket…" value="${esc(f.q)}">
+    <div class="fld"><label>Designer</label><select data-f="designer"><option value="">All</option>${designers.map(d=>`<option ${f.designer===d?'selected':''}>${esc(d)}</option>`).join('')}</select></div>
+    <div class="fld"><label>Deliverable</label><select data-f="dtype"><option value="">All</option>${DTYPES.map(d=>`<option ${f.dtype===d?'selected':''}>${d}</option>`).join('')}</select></div>
+    <div class="fld"><label>Market</label><select data-f="market"><option value="">All</option>${MARKETS.map(d=>`<option ${f.market===d?'selected':''}>${d}</option>`).join('')}</select></div>
+    <div class="fld"><label>Stage</label><select data-f="stage"><option value="">All</option>${STAGES.map(s=>`<option value="${s.id}" ${f.stage===s.id?'selected':''}>${s.n}. ${s.label}</option>`).join('')}</select></div>
+    <div class="fld"><label>Started</label><select data-f="month"><option value="">Any month</option>${monthsAvailable().reverse().map(m=>`<option value="${m}" ${f.month===m?'selected':''}>${monthLabel(m)}</option>`).join('')}</select></div>
+    <div class="chipset">${flag('','All')}${flag('active','Active')}${flag('ball','On me')}${flag('mine','My projects')}${flag('blocked','Blocked',1)}${flag('overdue','Overdue',1)}${flag('stale','Stale '+AGE_CRIT+'d+',1)}</div>
+    <div class="spacer"></div>
+    <button class="btn sm gh" data-act="expandall">Expand all logs</button>
+    ${FULL()?`<button class="btn sm gh" data-act="wipe" title="Delete every project — for wiping the sample data">Clear all</button>`:''}
+  </div>`;
+}
+
+function viewPipeline(list){
+  const m = monthMetrics(monthKey(new Date()));
+  const active = state.projects.filter(isActive);
+  const stale = active.filter(p=>daysBetween(p.stage_since)>=AGE_CRIT).length;
+  const sd = stageDurations(state.projects);
+  const worst = STAGES.filter(s=>s.id!=='done'&&sd[s.id].length).map(s=>({s,v:avg(sd[s.id])})).sort((a,b)=>b.v-a.v)[0];
+  return `
+  ${filterBar()}
+  <div class="kpis">
+    ${kpi('Live this month', m.live, '--ok', `${m.started} new projects started`)}
+    ${kpi('Designs submitted', m.designs, '--info', `${m.submits} total handoffs to review`)}
+    ${kpi('First-pass approval', m.firstPass+'<small>%</small>', m.firstPass>=60?'--ok':'--warn', `${m.leadRev} lead revisions requested`)}
+    ${kpi('Amazon approval', (m.live+m.rejects)?m.amzApproval+'<small>%</small>':'—', m.rejects?'--bad':'--ok', `${m.rejects} rejection${m.rejects===1?'':'s'} this month`)}
+    ${kpi('Avg cycle time', m.cycle?m.cycle.toFixed(0)+'<small>d</small>':'—', '--acc', 'selected → live')}
+    ${kpi('Blocked', state.projects.filter(p=>p.blocked).length, '--bad', `${stale} stale ${AGE_CRIT}d+`)}
+    ${kpi('Slowest stage', worst?worst.v.toFixed(1)+'<small>d</small>':'—', '--warn', worst?worst.s.short:'no data')}
+  </div>
+  <div class="sechead"><h2>Projects</h2><div class="rule"></div><span class="n">${list.length} shown · ${active.length} active · ${state.projects.length} total</span></div>
+  ${list.length?`<div class="cards">${list.map(card).join('')}</div>`:emptyState()}`;
+}
+const kpi=(lb,vl,c,sb)=>`<div class="kpi" style="--k:var(${c})"><span class="lb">${lb}</span><span class="vl">${vl}</span><span class="sb">${sb}</span></div>`;
+const emptyState=()=>`<div class="empty"><h3>Nothing matches those filters</h3><p>Clear the filters, or start a project — every project is one product plus one deliverable type, e.g. “WP300 Walking Pad · Main Gallery · DE”.</p><button class="btn pri" data-act="new">+ New project</button></div>`;
+
+/* ---------- the project card ---------- */
+function card(p){
+  const st=S[p.stage], le=lastEv(p.id), cm=cmOf(p.id), ev=evOf(p.id);
+  const d=daysBetween(p.stage_since);
+  const ageCls=d>=AGE_CRIT?'crit':d>=AGE_WARN?'hot':'';
+  const b=ballWith(p);
+  const open=state.open.has(p.id);
+  const dt=state.dtab[p.id]||'log';
+  const railIdx=RAIL.indexOf(st.id);
+  const inLoop=LOOPS.has(st.id);
+  const loopAnchor={lead_fix:'lead_rev',head_fix:'head_rev',amz_rej:'amz_rev'}[st.id];
+  const anchorIdx=inLoop?RAIL.indexOf(loopAnchor):railIdx;
+  const revs=(p.rev_lead||0)+(p.rev_head||0)+(p.rev_amz||0);
+  return `<article class="card ${p.blocked?'blocked':''}" data-p="${p.id}">
+    <div class="card-top">
+      <div class="tbadge" title="${esc(p.dtype)}">${esc(shortType(p.dtype))}</div>
+      <div class="card-id">
+        <h3>${esc(p.product)}${stgPill(st)}</h3>
+        <div class="meta">
+          <span class="pin">${esc(p.dtype)}</span>·<span class="mkt">${esc(p.market)}</span>
+          <span>${esc(p.asin||'no ASIN')}</span>·<span class="pri-f ${p.priority}">${esc(p.priority)}</span>
+          ${p.ticket_id?`·<span>🎫 ${esc(p.ticket_id)}</span>`:''}
+          ${isOverdue(p)?`·<span style="color:var(--ink);font-weight:600">due ${fmtDate(p.due_date)} · overdue</span>`:`·<span>due ${fmtDate(p.due_date)}</span>`}
+          ${revs?`·<span title="revisions">↺ ${revs}</span>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="rail">${RAIL.map((id,i)=>{
+      if(p.stage==='done') return `<i class="cur" style="--rc:${S.done.c}" title="${esc(S[id].label)}"></i>`;
+      const cls = i<anchorIdx?'done':i===anchorIdx?(inLoop?'loop':'cur'):'';
+      return `<i class="${cls}" style="--rc:${inLoop?INK:st.c}" title="${esc(S[id].label)}"></i>`;
+    }).join('')}</div>
+    <div class="latest">
+      <span class="ic">${le?(le.kind==='comment'?'💬':le.kind==='create'?'◆':'▸'):'·'}</span>
+      <div class="bd">
+        ${le?`<p><b>${esc(le.actor)}</b> ${esc(evVerb(le))}${le.note?` — <em>“${esc(le.note)}”</em>`:''}</p>
+             <span class="ts">${esc(fmtStamp(le.at))} · ${esc(ago(le.at))}</span>`
+            :`<p><em>No activity logged yet. First step: start the concept.</em></p>`}
+      </div>
+    </div>
+    <div class="ball">
+      <span class="k">Ball with</span><span class="p">${av(b.name)} ${esc(b.name)}</span>
+      <span style="color:var(--tx-3);font-size:10.5px">(${esc(b.role)})</span>
+      <span class="spacer"></span>
+      <span class="age ${ageCls}">${d}d in ${esc(st.short)}</span>
+    </div>
+    ${p.blocked?`<div class="blockmsg"><b>Blocked</b><span>${esc(p.block_reason||'No reason given.')}</span></div>`:''}
+    ${READONLY()?'':`<div class="acts">
+      ${(MOVES[p.stage]||[]).map(mv=>{
+        const ok=canAct(p,mv);
+        return `<button class="btn sm ${mv.st}" ${ok?'':'disabled'} data-move="${p.id}|${mv.to}"
+          title="${ok?esc(mv.lb):esc(whyNot(p,mv))}">${esc(mv.lb)}</button>`;
+      }).join('')}
+      <span class="spacer"></span>
+      ${canEdit(p)?`<button class="btn sm gh" data-block="${p.id}">${p.blocked?'Unblock':'Flag blocked'}</button>
+      <button class="btn sm gh" data-edit="${p.id}">Edit</button>`:''}
+      ${FULL()?`<button class="btn sm gh" data-del="${p.id}" title="Delete this project and its whole history">Delete</button>`:''}
+    </div>`}
+    <button class="tgl ${open?'open':''}" data-tgl="${p.id}">
+      <span class="l"><span class="car">▶</span> Full log &amp; chat</span>
+      <span class="l"><span class="badge">${ev.length} events</span><span class="badge">${cm.length} messages</span></span>
+    </button>
+    <div class="drawer ${open?'open':''}"><div><div class="drawer-in">
+      ${open?`<div class="dtabs">
+        <button class="${dt==='log'?'on':''}" data-dtab="${p.id}|log">Activity log</button>
+        <button class="${dt==='chat'?'on':''}" data-dtab="${p.id}|chat">Chat ${cm.length?'('+cm.length+')':''}</button>
+        <button class="${dt==='det'?'on':''}" data-dtab="${p.id}|det">Details</button>
+      </div>
+      <div class="dpane">${dt==='log'?paneLog(p,ev):dt==='chat'?paneChat(p,cm):paneDet(p,ev)}</div>`:''}
+    </div></div></div>
+  </article>`;
+}
+/* Three treatments, no third colour:
+   solid accent = finished (Live)  ·  solid ink = a backwards loop (revision / rejection)
+   tinted + ink text = in flight. Ink text everywhere keeps the label readable, which a
+   pale-blue-on-pale-blue pill does not. */
+function stgPill(st){
+  if(st.id==='done')  return `<span class="stg" style="background:var(--acc);color:#fff;border-color:var(--acc)"><i class="sq" style="background:#fff"></i>${esc(st.short)}</span>`;
+  if(st.c===INK)      return `<span class="stg" style="background:${INK};color:#fff;border-color:${INK}"><i class="sq" style="background:#fff"></i>${esc(st.short)}</span>`;
+  return `<span class="stg" style="background:${st.c}33;color:var(--ink);border-color:${st.c}"><i class="sq" style="background:${st.c}"></i>${esc(st.short)}</span>`;
+}
+function shortType(t){
+  return {'Main Image':'HERO','Main Gallery':'GAL','A+ Content':'A+','Premium Gallery':'PREM','Brand Story':'STORY','Infographic Set':'INFO','Video':'VID','Variation Images':'VAR'}[t]||t.slice(0,4).toUpperCase();
+}
+function evVerb(e){
+  if(e.kind==='create') return 'created the project';
+  if(e.kind==='comment') return 'asked in chat';
+  if(e.kind==='block') return 'flagged this as blocked';
+  if(e.kind==='unblock') return 'cleared the block';
+  if(e.kind==='edit') return 'updated the project details';
+  if(e.kind==='stage'){
+    const t=S[e.to_stage];
+    if(e.to_stage==='lead_fix'||e.to_stage==='head_fix') return 'requested a revision';
+    if(e.to_stage==='amz_rej') return 'logged an Amazon rejection';
+    if(e.to_stage==='done') return 'marked it LIVE on Amazon';
+    if(e.to_stage==='head_rev'&&e.from_stage==='lead_rev') return 'approved it → Team Head';
+    if(e.to_stage==='live_req') return 'approved it for live';
+    return 'moved it to '+(t?t.label:e.to_stage);
+  }
+  return 'updated it';
+}
+function paneLog(p,ev){
+  if(!ev.length) return `<p style="font-family:var(--mono);font-size:11px;color:var(--tx-3)">Nothing logged yet.</p>`;
+  return `<div class="tl">${[...ev].reverse().map(e=>{
+    const to=e.to_stage?S[e.to_stage]:null, fr=e.from_stage?S[e.from_stage]:null;
+    const col=to?to.c:'var(--tx-3)';
+    const nc = (e.to_stage==='lead_fix'||e.to_stage==='head_fix')?'rev':(e.to_stage==='amz_rej')?'rej':'';
+    return `<div class="ev" style="--ec:${col}">
+      <div class="eh"><b>${esc(e.actor)}</b>
+        <span class="ts">${esc(ROLES.find(r=>r.id===e.actor_role)?.lb||e.actor_role)} · ${esc(fmtStamp(e.at))} · ${esc(ago(e.at))}</span></div>
+      ${e.kind==='stage'?`<div class="flow"><s>${esc(fr?fr.label:'—')}</s> <em>▶</em> <span style="color:${col}">${esc(to?to.label:'')}</span></div>`
+        :`<div class="flow"><s>${esc(evVerb(e))}</s></div>`}
+      ${e.note?`<div class="note ${nc}">${esc(e.note)}</div>`:''}
+    </div>`;
+  }).join('')}</div>`;
+}
+function paneChat(p,cm){
+  const qs=['What is the status right now?','Why is this pending?','When will this be ready?','Please prioritise this one.','Who is blocking this?'];
+  return `<div class="chat" id="chat-${p.id}">
+    ${cm.length?cm.map(c=>`<div class="msg ${c.actor===state.user.name?'mine':''}">${av(c.actor)}
+      <div class="bub"><div class="mh"><b>${esc(c.actor)}</b><span>${esc(ROLES.find(r=>r.id===c.actor_role)?.lb||'')} · ${esc(ago(c.at))}</span></div>
+      <div class="mt">${linkMentions(c.text)}</div></div></div>`).join('')
+    :`<p style="font-family:var(--mono);font-size:11px;color:var(--tx-3)">No messages yet. Ask the owner directly here — it stays attached to this project.</p>`}
+  </div>
+  ${READONLY()?`<p class="hintline" style="margin:13px 0 0;padding-top:13px;border-top:1px solid var(--line)">Visitors can read the thread but not post. Sign in as yourself to ask a question here.</p>`
+  :`<div class="askbar">
+    <textarea id="say-${p.id}" placeholder="Ask ${esc(ballWith(p).name)} something… use @name to point at someone"></textarea>
+    <button class="btn pri" data-say="${p.id}">Send</button>
+  </div>
+  <div class="quickq">${qs.map(q=>`<button data-q="${p.id}|${esc(q)}">${esc(q)}</button>`).join('')}</div>`}`;
+}
+function linkMentions(t){ return esc(t).replace(/@([A-Za-zÀ-ÿ]+(?: [A-Za-zÀ-ÿ]+)?)/g,'<span class="mention">@$1</span>'); }
+function paneDet(p,ev){
+  const created=p.created_at, doneEv=ev.filter(e=>e.to_stage==='done').pop();
+  const cycle=doneEv?((new Date(doneEv.at)-new Date(created))/DAY).toFixed(0)+' days':daysBetween(created)+' days so far';
+  const sd=stageDurations([p]);
+  const slow=STAGES.filter(s=>sd[s.id].length).map(s=>({s,v:avg(sd[s.id])})).sort((a,b)=>b.v-a.v)[0];
+  const f=(k,v,cls='')=>`<div class="fact"><span class="k">${k}</span><span class="v ${cls}">${v}</span></div>`;
+  return `<div class="facts">
+    ${f('Product',esc(p.product))}
+    ${f('Deliverable',esc(p.dtype))}
+    ${f('Marketplace','amazon.'+String(p.market).toLowerCase())}
+    ${f('ASIN',esc(p.asin||'—'),'mono')}
+    ${f('Designer',esc(p.designer||'—'))}
+    ${f('Team Lead',esc(p.lead||'—'))}
+    ${f('Team Head',esc(p.head||'—'))}
+    ${f('Project Manager',esc(p.pm||'—'))}
+    ${f('Priority',esc(p.priority))}
+    ${f('Due',fmtDate(p.due_date)+(isOverdue(p)?' <span style="color:var(--ink);font-weight:600">· overdue</span>':''),'mono')}
+    ${f('Started',fmtDate(created),'mono')}
+    ${f('Cycle time',cycle,'mono')}
+    ${f('Amazon ticket',p.ticket_id?esc(p.ticket_id):'—','mono')}
+    ${f('Slowest stage here',slow?esc(slow.s.short)+' · '+slow.v.toFixed(1)+'d':'—','mono')}
+  </div>
+  <div class="revbars">Revisions —
+    <b>Lead ${p.rev_lead||0}</b> · <b>Head ${p.rev_head||0}</b> · <b>Amazon rejections ${p.rev_amz||0}</b>
+  </div>`;
+}
+
+/* ============================ RENDER: board ============================ */
+function viewBoard(list){
+  return `${filterBar()}
+  <div class="sechead"><h2>Pipeline board</h2><div class="rule"></div><span class="n">click a card to open it in the pipeline view</span></div>
+  <div class="board">${STAGES.map(s=>{
+    const col=list.filter(p=>p.stage===s.id);
+    return `<div class="col"><div class="col-h"><i class="sq" style="background:${s.c}"></i><b>${s.n}. ${esc(s.short)}</b><span class="c">${col.length}</span></div>
+      <div class="col-b">${col.length?col.map(p=>{
+        const b=ballWith(p), d=daysBetween(p.stage_since);
+        return `<button class="mini ${p.blocked?'blk':''}" data-goto="${p.id}">
+          <b>${esc(p.product)}</b><span class="t">${esc(p.dtype)} · ${esc(p.market)}</span>
+          <span class="f"><span class="who2">${av(b.name)} ${esc(b.name.split(' ')[0])}</span>
+          <span class="age ${d>=AGE_CRIT?'crit':d>=AGE_WARN?'hot':''}">${d}d</span></span></button>`;
+      }).join(''):`<div class="col-empty">empty</div>`}</div></div>`;
+  }).join('')}</div>`;
+}
+
+/* ============================ RENDER: performance ============================ */
+function designerStats(mk){
+  const names=[...new Set(state.projects.map(p=>p.designer))].filter(Boolean).sort();
+  const pOf=id=>state.projects.find(x=>x.id===id);
+  const sd=stageDurations(state.projects);
+  return names.map(n=>{
+    const own=state.projects.filter(p=>p.designer===n);
+    const act=own.filter(isActive);
+    const ev=state.events.filter(e=>e.kind==='stage'&&monthKey(e.at)===mk&&pOf(e.project_id)?.designer===n);
+    const subs=ev.filter(e=>e.to_stage==='lead_rev').length;
+    const live=ev.filter(e=>e.to_stage==='done').length;
+    const lrev=ev.filter(e=>e.to_stage==='lead_fix').length;
+    const hrev=ev.filter(e=>e.to_stage==='head_fix').length;
+    const rej =ev.filter(e=>e.to_stage==='amz_rej').length;
+    const dd=stageDurations(own);
+    return {n,act:act.length,subs,live,lrev,hrev,rej,
+      firstPass:pct(subs-lrev,Math.max(subs,1)),
+      designDays:avg([...(dd.design||[]),...(dd.lead_fix||[]),...(dd.head_fix||[])]),
+      blocked:act.filter(p=>p.blocked).length};
+  });
+}
+function rejectionBreakdown(){
+  const out={}; REJECT_REASONS.forEach(r=>out[r]=0);
+  state.events.filter(e=>e.to_stage==='amz_rej').forEach(e=>{
+    const n=String(e.note||'');
+    const hit=REJECT_REASONS.find(r=>n.toLowerCase().includes(r.toLowerCase().split(' /')[0].toLowerCase()));
+    out[hit||'No reason given']++;
+  });
+  return Object.entries(out).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+}
+function viewPerf(list){
+  const months=monthsAvailable();
+  const mk=state.amonth||monthKey(new Date());
+  const m=monthMetrics(mk);
+  const prev=months[months.indexOf(mk)-1]?monthMetrics(months[months.indexOf(mk)-1]):null;
+  const sd=stageDurations(state.projects);
+  const rows=STAGES.filter(s=>s.id!=='done'&&sd[s.id].length).map(s=>({s,v:avg(sd[s.id]),n:sd[s.id].length})).sort((a,b)=>b.v-a.v);
+  const maxV=Math.max(...rows.map(r=>r.v),1);
+  const ds=designerStats(mk);
+  const maxSub=Math.max(...ds.map(d=>d.subs),1);
+  const rej=rejectionBreakdown();
+  const maxRej=Math.max(...rej.map(r=>r[1]),1);
+  const last6=months.slice(-6);
+  const mms=last6.map(monthMetrics);
+  const maxStack=Math.max(...mms.map(x=>x.designs+x.live+x.leadRev+x.headRev+x.rejects),1);
+  const funnel=[['Projects started',m.started,'#C7DFF8'],['Designs submitted',m.designs,'#93C2F1'],
+    ['Lead approved',m.leadPass,'#5FA5EA'],['Head approved',m.headPass,'#2B88E5'],
+    ['Live on Amazon',m.live,'#0071E3']];
+  const maxF=Math.max(...funnel.map(f=>f[1]),1);
+  const delta=(a,b)=>b==null?'':(a-b>0?`<i class="u">▲ ${a-b}</i> vs ${monthLabel(months[months.indexOf(mk)-1])}`:a-b<0?`<i class="d">▼ ${b-a}</i> vs ${monthLabel(months[months.indexOf(mk)-1])}`:`level vs ${monthLabel(months[months.indexOf(mk)-1])}`);
+  return `
+  <div class="filters">
+    <div class="fld"><label>Month</label><select data-amonth>${months.slice().reverse().map(x=>`<option value="${x}" ${x===mk?'selected':''}>${monthLabel(x)}</option>`).join('')}</select></div>
+    <span style="font-family:var(--mono);font-size:10.5px;color:var(--tx-3)">Monthly figures count <b style="color:var(--tx-2)">events that happened in the month</b>, not projects created in it — so a project started in June and shipped in August counts as August output.</span>
+    <div class="spacer"></div>
+    <button class="btn sm gh" data-act="csv">Export CSV</button>
+  </div>
+  <div class="kpis">
+    ${kpi('Went live',m.live,'--ok',delta(m.live,prev?.live))}
+    ${kpi('Designs submitted',m.designs,'--info',delta(m.designs,prev?.designs))}
+    ${kpi('Projects started',m.started,'--acc',delta(m.started,prev?.started))}
+    ${kpi('First-pass approval',m.firstPass+'<small>%</small>',m.firstPass>=60?'--ok':'--warn',`${m.leadRev} lead + ${m.headRev} head revisions`)}
+    ${kpi('Amazon approval',(m.live+m.rejects)?m.amzApproval+'<small>%</small>':'—',m.rejects?'--bad':'--ok',`${m.rejects} rejected`)}
+    ${kpi('Avg cycle time',m.cycle?m.cycle.toFixed(1)+'<small>d</small>':'—','--warn','selected → live')}
+  </div>
+
+  <div class="grid2">
+    <div class="panel"><div class="panel-h"><h3>Where time actually goes</h3><span class="hint">avg days per stage · all projects<br>vertical mark = ${AGE_WARN}d target</span></div>
+      <div class="panel-b"><div class="hbars">${rows.map((r,i)=>`
+        <div class="hbar"><span class="nm">${r.s.n}. ${esc(r.s.short)}</span>
+          <span class="tr"><span class="fl" style="--c:${r.s.c};width:${Math.max(2,r.v/maxV*100)}%"></span>
+          <span class="thresh" style="left:${Math.min(99,AGE_WARN/maxV*100)}%"></span></span>
+          <span class="vv">${r.v.toFixed(1)}d <s>×${r.n}</s></span></div>`).join('')}</div>
+        <p class="hintline" style="margin:12px 0 0">${rows.length?`<b style="color:var(--tx-2)">Biggest drag: ${esc(rows[0].s.label)} at ${rows[0].v.toFixed(1)} days.</b> Anything past the ${AGE_WARN}-day mark is queue time, not work time — that is where a nudge buys you days for free.`:'Not enough history yet.'}</p>
+      </div></div>
+
+    <div class="panel"><div class="panel-h"><h3>Monthly output</h3><span class="hint">last ${last6.length} months</span></div>
+      <div class="panel-b">
+        <div class="months">${mms.map((x,i)=>{
+          const segs=[['#0071E3',x.live],['#79B3EE',x.designs],['#8E9294',x.leadRev],['#C6CACC',x.headRev],[INK,x.rejects]];
+          return `<div class="mcol" title="${monthLabel(last6[i])}: ${x.live} live, ${x.designs} designs, ${x.leadRev+x.headRev} revisions, ${x.rejects} rejected">
+            <div class="stk">${segs.map(([c,v])=>v?`<i class="seg" style="background:${c};height:${v/maxStack*112}px"></i>`:'').join('')}</div>
+            <span class="lb2">${monthLabel(last6[i]).split(' ')[0]}</span></div>`;
+        }).join('')}</div>
+        <div class="legend">
+          <span><i style="background:#0071E3"></i>Live</span><span><i style="background:#79B3EE"></i>Designs</span>
+          <span><i style="background:#8E9294"></i>Lead rev.</span><span><i style="background:#C6CACC"></i>Head rev.</span>
+          <span><i style="background:#25282A"></i>Rejected</span>
+        </div>
+      </div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel"><div class="panel-h"><h3>${monthLabel(mk)} · flow through the gates</h3><span class="hint">events counted in this month</span></div>
+      <div class="panel-b"><div class="funnel">${funnel.map(([nm,v,c])=>`
+        <div class="fstep"><span class="nm">${esc(nm)}</span>
+          <span class="tr2"><span class="fl2" style="--c:${c};width:${Math.max(3,v/maxF*100)}%"></span></span>
+          <span class="vv2">${v}</span></div>`).join('')}</div>
+        <p class="hintline" style="margin:12px 0 0">${m.designs||m.live
+          ?`<b style="color:var(--tx-2)">${m.live} went live, ${m.designs} newly submitted.</b> These are flow counts, not a cohort — live counts finishes, submitted counts starts, so the bars only line up when the pipeline is in steady state. ${m.live>m.designs?'More finished than started: you are draining a backlog from earlier months, which will not repeat.':m.live<m.designs?'More started than finished: work is accumulating in the middle of the pipeline — check the stage-time chart on the left.':'Balanced month.'}`
+          :'Nothing moved this month.'}</p>
+      </div></div>
+
+    <div class="panel"><div class="panel-h"><h3>Amazon rejection reasons</h3><span class="hint">all time · fix the top one first</span></div>
+      <div class="panel-b">${rej.length?`<div class="hbars">${rej.map(([r,v])=>`
+        <div class="hbar"><span class="nm" title="${esc(r)}">${esc(r)}</span>
+          <span class="tr"><span class="fl" style="--c:${INK};width:${v/maxRej*100}%"></span></span>
+          <span class="vv">${v}</span></div>`).join('')}</div>
+        <p class="hintline" style="margin:12px 0 0"><b style="color:var(--tx-2)">Each rejection costs you a full loop back through design and both approval gates.</b> A recurring reason is a briefing problem, not an Amazon problem — put the top reason into the design checklist.</p>`
+        :`<p style="font-family:var(--mono);font-size:11px;color:var(--tx-3)">No rejections logged. Nothing to fix.</p>`}
+      </div></div>
+  </div>
+
+  <div class="panel"><div class="panel-h"><h3>Designer performance · ${monthLabel(mk)}</h3><span class="hint">WIP limit ${WIP_LIMIT} · first-pass = submitted without a lead revision</span></div>
+    <div class="panel-b" style="overflow-x:auto">
+      <table class="dtable"><thead><tr>
+        <th>Designer</th><th>Active</th><th>WIP</th><th>Submitted</th><th>Live</th>
+        <th>Lead rev.</th><th>Head rev.</th><th>Rejected</th><th>First pass</th><th>Avg days designing</th>
+      </tr></thead><tbody>${ds.map(d=>`<tr>
+        <td>${av(d.n)} ${esc(d.n)}</td>
+        <td>${d.act}${d.blocked?` <span class="pill r">${d.blocked} blk</span>`:''}</td>
+        <td><span class="wip">${Array.from({length:Math.min(d.act,8)}).map((_,i)=>`<i class="${i>=WIP_LIMIT?'over':''}"></i>`).join('')||'<s style="color:var(--tx-3)">—</s>'}</span></td>
+        <td>${d.subs}</td><td>${d.live}</td><td>${d.lrev}</td><td>${d.hrev}</td><td>${d.rej}</td>
+        <td><span class="pill ${d.firstPass>=70?'g':d.firstPass>=45?'y':'r'}">${d.subs?d.firstPass+'%':'—'}</span></td>
+        <td>${d.designDays?d.designDays.toFixed(1):'—'}</td></tr>`).join('')}</tbody></table>
+      <p class="hintline" style="margin:14px 0 0">Read <b style="color:var(--tx-2)">first pass</b> before speed. A designer shipping fast with a 30% first-pass rate is burning the Team Lead's time, and every loop adds days to cycle time. If first pass is low across everyone, the brief is the problem — not the designers.</p>
+    </div></div>`;
+}
+
+/* ============================ RENDER: needs attention ============================ */
+function attnList(){
+  const A=[];
+  state.projects.filter(isActive).forEach(p=>{
+    const d=daysBetween(p.stage_since), b=ballWith(p);
+    if(p.blocked) A.push({sev:INK,p,t:'Blocked',w:p.block_reason||'No reason given',r:`${d}d · ${b.name}`,o:0});
+    else if(d>=AGE_CRIT) A.push({sev:INK,p,t:`Stuck ${d} days in ${S[p.stage].short}`,w:`Waiting on ${b.name} (${b.role})`,r:`${d}d`,o:1});
+    else if(isOverdue(p)) A.push({sev:GREY,p,t:'Past its due date',w:`Due ${fmtDate(p.due_date)} · now at ${S[p.stage].short}`,r:`${daysBetween(p.due_date)}d late`,o:2});
+    else if(d>=AGE_WARN) A.push({sev:GREY,p,t:`${d} days in ${S[p.stage].short}`,w:`Waiting on ${b.name} (${b.role})`,r:`${d}d`,o:3});
+    if((p.rev_lead||0)+(p.rev_head||0)>=3) A.push({sev:GREY,p,t:`${(p.rev_lead||0)+(p.rev_head||0)} revision loops`,w:'Repeated loops usually mean the brief was unclear, not the design',r:'↺',o:4});
+    if((p.rev_amz||0)>=1&&p.stage!=='done') A.push({sev:INK,p,t:`Amazon rejected ${p.rev_amz}×`,w:'Check the rejection reason before resubmitting',r:'✕',o:1});
+  });
+  A.sort((a,b)=>a.o-b.o);
+  return A;
+}
+const attnRed = () => attnList().filter(a=>a.sev===INK).length;
+function viewAttn(){
+  const A=attnList(), red=A.filter(a=>a.sev===INK).length;
+  const wip=designerStats(monthKey(new Date())).filter(d=>d.act>WIP_LIMIT);
+  return `<div class="sechead"><h2>Needs attention</h2><div class="rule"></div><span class="n">${red} urgent · ${A.length-red} watch · ranked by cost of ignoring it</span></div>
+  ${wip.length?`<div class="callout warn"><div><b>Over WIP limit.</b> ${wip.map(d=>`${esc(d.n)} has ${d.act} active projects`).join('; ')}. Above ${WIP_LIMIT} in parallel, everything slows down at once instead of one thing finishing. <b>Recommendation:</b> freeze new assignments for them until something reaches Amazon review.</div></div>`:''}
+  ${A.length?`<div class="alerts">${A.map(a=>`<button class="alert" data-goto="${a.p.id}">
+    <span class="sev" style="background:${a.sev}"></span>
+    <span class="bd2"><b>${esc(a.p.product)} · ${esc(a.p.dtype)} <span style="color:${a.sev};font-weight:600">— ${esc(a.t)}</span></b><span>${esc(a.w)}</span></span>
+    <span class="rt">${esc(a.r)}</span></button>`).join('')}</div>`
+  :`<div class="empty"><h3>Nothing is stuck</h3><p>No blocks, nothing older than ${AGE_CRIT} days in a stage, nothing overdue. That is the state you want the board in at the end of every week.</p></div>`}`;
+}
+
+/* ============================ MODALS ============================ */
+let modalCtx=null;
+function closeModal(){ modalCtx=null; $('#modalroot').innerHTML=''; }
+function openModal(html,cls=''){ $('#modalroot').innerHTML=`<div class="ovl" data-ovl><div class="modal ${cls}">${html}</div></div>`; }
+const mh=t=>`<div class="modal-h"><h3>${t}</h3><button class="x" data-act="close">✕</button></div>`;
+
+function modalNew(){
+  modalCtx={kind:'new'};
+  const opts=(list,sel)=>list.map(n=>`<option ${n===sel?'selected':''}>${esc(n)}</option>`).join('');
+  openModal(`${mh('New project')}<div class="modal-b">
+    <div class="callout"><div>One project = <b>one product + one deliverable type + one market</b>. Track the gallery and the A+ page separately, or you lose sight of the one that is stuck.</div></div>
+    <div class="frow">
+      <label class="f1"><span>Product name <em>*</em></span><input id="n-product" placeholder="e.g. WP300 Walking Pad"></label>
+      <label class="f1"><span>ASIN</span><input id="n-asin" placeholder="B0…"></label>
+    </div>
+    <div class="frow">
+      <label class="f1"><span>Deliverable <em>*</em></span><select id="n-dtype">${DTYPES.map(d=>`<option>${d}</option>`).join('')}</select></label>
+      <label class="f1"><span>Market</span><select id="n-market">${MARKETS.map(d=>`<option>${d}</option>`).join('')}</select></label>
+      <label class="f1"><span>Priority</span><select id="n-pri"><option value="high">High</option><option value="med" selected>Medium</option><option value="low">Low</option></select></label>
+    </div>
+    <div class="frow">
+      <label class="f1"><span>Designer <em>*</em></span><select id="n-designer">${opts(peopleIn('designer'),state.user.role==='designer'?state.user.name:'')}</select></label>
+      <label class="f1"><span>Due date</span><input type="date" id="n-due" value="${new Date(Date.now()+7*DAY).toISOString().slice(0,10)}"></label>
+    </div>
+    <div class="frow">
+      <label class="f1"><span>Team Lead</span><select id="n-lead">${opts(peopleIn('lead'),state.user.role==='lead'?state.user.name:TEAM.lead)}</select></label>
+      <label class="f1"><span>Team Head</span><select id="n-head">${opts(peopleIn('head'),state.user.role==='head'?state.user.name:TEAM.head)}</select></label>
+      <label class="f1"><span>Project Manager</span><select id="n-pm">${opts(peopleIn('pm'),TEAM.pm)}</select></label>
+    </div>
+    <label class="f1"><span>Opening note</span><textarea id="n-note" rows="2" placeholder="Why this product, what the goal of the update is…"></textarea></label>
+  </div>
+  <div class="modal-f"><button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="savenew">Create project</button></div>`);
+}
+function modalMove(pid,to){
+  const p=state.projects.find(x=>x.id===pid); if(!p) return;
+  const mv=(MOVES[p.stage]||[]).find(m=>m.to===to); if(!mv) return;
+  modalCtx={kind:'move',pid,to};
+  const isRej=to==='amz_rej', isRev=(to==='lead_fix'||to==='head_fix'), isTicket=to==='ticket';
+  openModal(`${mh(esc(mv.lb))}<div class="modal-b">
+    <div class="callout ${isRej?'bad':isRev?'warn':''}"><div>
+      <b>${esc(p.product)} · ${esc(p.dtype)} · ${esc(p.market)}</b><br>
+      ${esc(S[p.stage].label)} &nbsp;▶&nbsp; <b>${esc(S[to].label)}</b><br>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--tx-3)">Ball moves to ${esc(ballWith({...p,stage:to}).name)}</span>
+    </div></div>
+    ${isRej?`<label class="f1" style="margin-bottom:12px"><span>Amazon's reason <em>*</em></span>
+      <select id="m-reason">${REJECT_REASONS.map(r=>`<option>${r}</option>`).join('')}</select></label>`:''}
+    ${isTicket?`<label class="f1" style="margin-bottom:12px"><span>Ticket / case ID <em>*</em></span>
+      <input id="m-ticket" placeholder="e.g. CS-88421" value="${esc(p.ticket_id||'')}"></label>`:''}
+    <label class="f1"><span>${mv.need?esc(mv.need)+' *':'Note (optional but recommended)'}</span>
+      <textarea id="m-note" rows="3" placeholder="${isRev?'Be specific — vague notes are why things loop twice.':'What changed, what to watch for…'}"></textarea></label>
+    <p class="hintline">${mv.need?'Required. This is the text the designer sees and the reason the log can answer “why is this pending” without anyone asking.':'Skipping the note is allowed, but then nobody can reconstruct why later.'}</p>
+  </div>
+  <div class="modal-f"><button class="btn" data-act="close">Cancel</button>
+  <button class="btn ${mv.st==='gh'?'pri':mv.st}" data-act="domove">${esc(mv.lb)}</button></div>`);
+}
+function modalBlock(pid){
+  const p=state.projects.find(x=>x.id===pid); if(!p) return;
+  modalCtx={kind:'block',pid};
+  if(p.blocked) return openModal(`${mh('Clear the block')}<div class="modal-b">
+    <div class="callout"><div>Current block on <b>${esc(p.product)}</b>:<br>${esc(p.block_reason||'—')}</div></div>
+    <label class="f1"><span>What unblocked it?</span><textarea id="b-note" rows="2" placeholder="e.g. FR copy signed off by Marie"></textarea></label></div>
+    <div class="modal-f"><button class="btn" data-act="close">Cancel</button><button class="btn ok" data-act="dounblock">Clear block</button></div>`);
+  openModal(`${mh('Flag as blocked')}<div class="modal-b">
+    <div class="callout warn"><div>Blocking keeps the stage but marks the project as <b>not moving and not the owner's fault</b>. It is the honest answer to “why is this pending”.</div></div>
+    <label class="f1"><span>What is blocking it, and who can unblock it? <em>*</em></span>
+      <textarea id="b-reason" rows="3" placeholder="e.g. Waiting on the FR copy sign-off — nobody assigned since 24 July"></textarea></label></div>
+    <div class="modal-f"><button class="btn" data-act="close">Cancel</button><button class="btn bad" data-act="doblock">Flag blocked</button></div>`);
+}
+function modalEdit(pid){
+  const p=state.projects.find(x=>x.id===pid); if(!p) return;
+  modalCtx={kind:'edit',pid};
+  openModal(`${mh('Edit project')}<div class="modal-b">
+    <div class="frow">
+      <label class="f1"><span>Product</span><input id="e-product" value="${esc(p.product)}"></label>
+      <label class="f1"><span>ASIN</span><input id="e-asin" value="${esc(p.asin||'')}"></label>
+    </div>
+    <div class="frow">
+      <label class="f1"><span>Deliverable</span><select id="e-dtype">${DTYPES.map(d=>`<option ${p.dtype===d?'selected':''}>${d}</option>`).join('')}</select></label>
+      <label class="f1"><span>Market</span><select id="e-market">${MARKETS.map(d=>`<option ${p.market===d?'selected':''}>${d}</option>`).join('')}</select></label>
+      <label class="f1"><span>Priority</span><select id="e-pri">${['high','med','low'].map(x=>`<option value="${x}" ${p.priority===x?'selected':''}>${x==='med'?'Medium':x[0].toUpperCase()+x.slice(1)}</option>`).join('')}</select></label>
+    </div>
+    <div class="frow">
+      <label class="f1"><span>Designer</span><select id="e-designer">${peopleIn('designer').map(n=>`<option ${n===p.designer?'selected':''}>${esc(n)}</option>`).join('')}</select></label>
+      <label class="f1"><span>Due date</span><input type="date" id="e-due" value="${esc((p.due_date||'').slice(0,10))}"></label>
+      <label class="f1"><span>Ticket ID</span><input id="e-ticket" value="${esc(p.ticket_id||'')}"></label>
+    </div>
+    <div class="frow">
+      <label class="f1"><span>Team Lead</span><select id="e-lead">${peopleIn('lead').map(n=>`<option ${n===p.lead?'selected':''}>${esc(n)}</option>`).join('')}</select></label>
+      <label class="f1"><span>Team Head</span><select id="e-head">${peopleIn('head').map(n=>`<option ${n===p.head?'selected':''}>${esc(n)}</option>`).join('')}</select></label>
+      <label class="f1"><span>Project Manager</span><select id="e-pm">${peopleIn('pm').map(n=>`<option ${n===p.pm?'selected':''}>${esc(n)}</option>`).join('')}</select></label>
+    </div>
+    <div class="frow">
+      <label class="f1"><span>Brief link</span><input id="e-brief" value="${esc(p.brief_url||'')}" placeholder="https://…"></label>
+      <label class="f1"><span>Working files link</span><input id="e-work" value="${esc(p.work_url||'')}" placeholder="https://…"></label>
+    </div>
+  </div>
+  <div class="modal-f"><button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="doedit">Save</button></div>`);
+}
+function modalWho(){
+  modalCtx={kind:'who'};
+  openModal(`${mh('Who is using the board')}<div class="modal-b">
+    <div class="callout"><div>Signed in as <b>${esc(state.user.name)}</b> — ${esc(roleLb(state.user.role))}.
+      ${READONLY()?'<b>Read-only.</b> Every project, log, chat and chart is open to you; no button will change anything.'
+        :FULL()?'<b>Full control:</b> you can move any project through any gate, edit anything, and delete projects.'
+               :'You can act on your own gate, on your own projects. Everything else is read-only for you.'}
+      ${LIVE()?' Every action is written to the shared database under this name.':' Demo mode — switch freely to see what each person can and cannot press.'}</div></div>
+    <div class="gate-card" style="box-shadow:none;padding:0">${peoplePicker()}</div>
+  </div>
+  <div class="modal-f"><button class="btn" data-act="close">Close</button></div>`);
+}
+function modalDel(pid){
+  const p=state.projects.find(x=>x.id===pid); if(!p) return;
+  if(!FULL()) return toast('Not permitted','Only the Team Head or Project Manager can delete a project.','bad');
+  modalCtx={kind:'del',pid};
+  const ne=evOf(pid).length, nc=cmOf(pid).length;
+  openModal(`${mh('Delete project')}<div class="modal-b">
+    <div class="callout bad"><div><b>${esc(p.product)} · ${esc(p.dtype)} · ${esc(p.market)}</b><br>
+      This removes the project along with its ${ne} log entries and ${nc} chat messages. It cannot be undone, and the work vanishes from every monthly figure it contributed to.</div></div>
+    <p class="hintline">If you only want it off the active board, move it to <b>Live</b> instead — that keeps the history and keeps your throughput numbers honest.</p>
+  </div>
+  <div class="modal-f"><button class="btn" data-act="close">Keep it</button><button class="btn bad" data-act="dodel">Delete permanently</button></div>`);
+}
+function modalWipe(){
+  if(!FULL()) return toast('Not permitted','Only the Team Head or Project Manager can clear the board.','bad');
+  modalCtx={kind:'wipe'};
+  openModal(`${mh('Clear the whole board')}<div class="modal-b">
+    <div class="callout bad"><div><b>This deletes all ${state.projects.length} projects</b> with their logs and chats. It exists for one job: wiping the sample data before your team puts real work on the board. After that, delete projects one at a time.</div></div>
+    <label class="f1"><span>Type DELETE to confirm</span><input id="wipe-c" placeholder="DELETE" autocomplete="off"></label>
+  </div>
+  <div class="modal-f"><button class="btn" data-act="close">Cancel</button><button class="btn bad" data-act="dowipe">Clear the board</button></div>`);
+}
+function modalSetup(){
+  modalCtx={kind:'setup'};
+  openModal(`${mh('Make this board shared')}<div class="modal-b">
+    <div class="callout ${LIVE()?'':'warn'}"><div>${LIVE()
+      ?`<b>Live mode is on.</b> Reads and writes go to <span class="mono">${esc(SUPABASE_URL)}</span>.`
+      :`<b>You are in demo mode.</b> A plain HTML file has nowhere to store anything, so every person sees their own private copy and a refresh wipes it. Ten minutes of setup below turns this exact file into a real shared board for all ${TEAM_SIZE} people on the team — no code, no server, free tier.`}</div></div>
+    <ol class="steps">
+      <li>Create a free project at <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a>. Pick the <b>EU (Frankfurt)</b> region — your team data stays in the EU, which keeps this simple under GDPR.</li>
+      <li>Open <b>SQL Editor</b>, paste everything in the box below, press <b>Run</b>.</li>
+      <li>Go to <b>Project Settings → API</b>. Copy the <b>Project URL</b> and the <b>anon public</b> key.</li>
+      <li>Open this HTML file in any text editor. At the very top, paste them into <span class="mono">SUPABASE_URL</span> and <span class="mono">SUPABASE_ANON_KEY</span>. Save.</li>
+      <li>Put the file where the team can reach it — Vercel, Netlify drop, SharePoint, or a shared drive. Everyone now sees the same board, live.</li>
+    </ol>
+    <pre class="sql" id="sqlbox">${esc(SQL)}</pre>
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm" data-act="copysql">Copy SQL</button></div>
+    <div class="callout bad" style="margin-top:16px"><div><b>Know what you are choosing.</b> The SQL above allows anyone with the file to read and write — which is exactly what you asked for (“open for everyone, whoever comes in can log data”). It means anyone with the link can edit the board, and the anon key sits in the file. Fine for an internal creative board on an internal URL. Not fine if the file ever goes public. If you later want real logins, say so and I will swap the policies for Supabase Auth.</div></div>
+  </div>
+  <div class="modal-f"><button class="btn pri" data-act="close">Got it</button></div>`,'wide');
+}
+const SQL = `-- Sportstech Creative Ops · run once in the Supabase SQL Editor
+create table if not exists projects (
+  id uuid primary key,
+  product text not null,
+  asin text,
+  dtype text not null,
+  market text default 'DE',
+  designer text, lead text, head text, pm text,
+  stage text not null default 'product',
+  priority text default 'med',
+  due_date date,
+  created_at timestamptz default now(),
+  stage_since timestamptz default now(),
+  ticket_id text, ticket_url text, brief_url text, work_url text,
+  blocked boolean default false,
+  block_reason text,
+  rev_lead int default 0, rev_head int default 0, rev_amz int default 0
+);
+create table if not exists events (
+  id uuid primary key,
+  project_id uuid references projects(id) on delete cascade,
+  at timestamptz default now(),
+  actor text, actor_role text,
+  kind text, from_stage text, to_stage text, note text
+);
+create table if not exists comments (
+  id uuid primary key,
+  project_id uuid references projects(id) on delete cascade,
+  at timestamptz default now(),
+  actor text, actor_role text, text text
+);
+create index if not exists ev_p on events(project_id, at);
+create index if not exists cm_p on comments(project_id, at);
+
+-- Open access: anyone with the file can read + write (internal board).
+alter table projects enable row level security;
+alter table events   enable row level security;
+alter table comments enable row level security;
+create policy open_projects on projects for all using (true) with check (true);
+create policy open_events   on events   for all using (true) with check (true);
+create policy open_comments on comments for all using (true) with check (true);`;
+
+/* ============================ ACTIONS ============================ */
+const blockRO = () => { if(READONLY()){ toast('Read-only','You are signed in as a Visitor. Switch user to make changes.','bad'); return true; } return false; };
+async function doNew(){
+  if(blockRO()) return;
+  const g=id=>($('#'+id)?.value||'').trim();
+  const product=g('n-product'), designer=g('n-designer');
+  if(!product) return toast('Missing','Product name is required.','bad');
+  if(!designer) return toast('Missing','A designer has to own it, otherwise nobody has the ball.','bad');
+  const id=uid();
+  const p={id,product,asin:g('n-asin'),dtype:g('n-dtype'),market:g('n-market'),
+    designer,lead:g('n-lead'),head:g('n-head'),pm:g('n-pm'),
+    stage:'product',priority:g('n-pri')||'med',due_date:g('n-due')||null,
+    created_at:nowISO(),stage_since:nowISO(),
+    ticket_id:'',ticket_url:'',brief_url:'',work_url:'',
+    blocked:false,block_reason:'',rev_lead:0,rev_head:0,rev_amz:0};
+  try{
+    await Store.addProject(p);
+    await logEvent(id,'create',null,'product',g('n-note')||('Product selected for '+p.dtype+' ('+p.market+')'));
+    closeModal(); state.open.add(id); render();
+    toast('Created',product+' · '+p.dtype+' is on the board.','ok');
+  }catch(e){ state.err=e.message; render(); toast('Save failed',e.message,'bad'); }
+}
+
+async function doMove(){
+  if(blockRO()) return;
+  const {pid,to}=modalCtx; const p=state.projects.find(x=>x.id===pid); if(!p) return;
+  const mv=(MOVES[p.stage]||[]).find(m=>m.to===to); if(!mv) return;
+  if(!canAct(p,mv)) return toast('Not your gate',whyNot(p,mv)+'.','bad');
+  let note=($('#m-note')?.value||'').trim();
+  const reason=$('#m-reason')?.value||'', ticket=($('#m-ticket')?.value||'').trim();
+  if(to==='amz_rej') note='REJECTED — '+reason+(note?'. '+note:'');
+  if(to==='ticket'&&!ticket) return toast('Missing','The ticket ID is how you find the case again later.','bad');
+  if(mv.need&&!note) return toast('Note required',mv.need+' — this is what answers “why is it pending”.','bad');
+  const patch={stage:to,stage_since:nowISO()};
+  if(to==='lead_fix') patch.rev_lead=(p.rev_lead||0)+1;
+  if(to==='head_fix') patch.rev_head=(p.rev_head||0)+1;
+  if(to==='amz_rej')  patch.rev_amz =(p.rev_amz ||0)+1;
+  if(to==='ticket')   patch.ticket_id=ticket;
+  const from=p.stage;
+  try{
+    await Store.patchProject(pid,patch);
+    await logEvent(pid,'stage',from,to,note||null);
+    closeModal(); render();
+    toast('Moved',p.product+' → '+S[to].label+'. Ball with '+ballWith({...p,stage:to}).name+'.',to==='done'?'ok':'');
+  }catch(e){ state.err=e.message; render(); toast('Save failed',e.message,'bad'); }
+}
+
+async function doBlock(){
+  if(blockRO()) return;
+  const {pid}=modalCtx, p=state.projects.find(x=>x.id===pid);
+  const reason=($('#b-reason')?.value||'').trim();
+  if(!reason) return toast('Missing','Say what is blocking it — “blocked” with no reason is the thing you are trying to get rid of.','bad');
+  try{ await Store.patchProject(pid,{blocked:true,block_reason:reason});
+    await logEvent(pid,'block',p.stage,p.stage,reason); closeModal(); render(); toast('Flagged','Blocked and visible in Needs attention.','bad');
+  }catch(e){ state.err=e.message; render(); toast('Save failed',e.message,'bad'); }
+}
+async function doUnblock(){
+  const {pid}=modalCtx, p=state.projects.find(x=>x.id===pid);
+  const note=($('#b-note')?.value||'').trim();
+  try{ await Store.patchProject(pid,{blocked:false,block_reason:''});
+    await logEvent(pid,'unblock',p.stage,p.stage,note||'Block cleared'); closeModal(); render(); toast('Cleared','Back in motion.','ok');
+  }catch(e){ state.err=e.message; render(); toast('Save failed',e.message,'bad'); }
+}
+async function doEdit(){
+  if(blockRO()) return;
+  const {pid}=modalCtx, p=state.projects.find(x=>x.id===pid);
+  const g=id=>($('#'+id)?.value||'').trim();
+  const patch={product:g('e-product')||p.product,asin:g('e-asin'),dtype:g('e-dtype'),market:g('e-market'),
+    priority:g('e-pri'),designer:g('e-designer'),due_date:g('e-due')||null,ticket_id:g('e-ticket'),
+    lead:g('e-lead'),head:g('e-head'),pm:g('e-pm'),brief_url:g('e-brief'),work_url:g('e-work')};
+  const changed=Object.keys(patch).filter(k=>String(patch[k]??'')!==String(p[k]??''));
+  try{ await Store.patchProject(pid,patch);
+    if(changed.length) await logEvent(pid,'edit',p.stage,p.stage,'Updated: '+changed.join(', '));
+    closeModal(); render(); toast('Saved',changed.length?changed.length+' field(s) updated.':'Nothing changed.','ok');
+  }catch(e){ state.err=e.message; render(); toast('Save failed',e.message,'bad'); }
+}
+async function doSay(pid,text){
+  if(blockRO()) return;
+  const t=(text||'').trim(); if(!t) return;
+  try{ await Store.addComment({id:uid(),project_id:pid,at:nowISO(),actor:state.user.name,actor_role:state.user.role,text:t});
+    state.open.add(pid); state.dtab[pid]='chat'; render();
+    const c=$('#chat-'+pid); if(c) c.scrollTop=c.scrollHeight;
+  }catch(e){ state.err=e.message; render(); toast('Send failed',e.message,'bad'); }
+}
+async function doDel(){
+  const {pid}=modalCtx, p=state.projects.find(x=>x.id===pid); if(!p) return;
+  try{ await Store.deleteProject(pid); closeModal(); render();
+    toast('Deleted',p.product+' · '+p.dtype+' and its full history are gone.','bad');
+  }catch(e){ state.err=e.message; render(); toast('Delete failed',e.message,'bad'); }
+}
+async function doWipe(){
+  if(($('#wipe-c')?.value||'').trim().toUpperCase()!=='DELETE') return toast('Not confirmed','Type DELETE exactly, so this cannot happen by accident.','bad');
+  const ids=state.projects.map(p=>p.id), n=ids.length;
+  try{ for(const id of ids) await Store.deleteProject(id);
+    closeModal(); render(); toast('Board cleared',n+' projects removed. Add your first real project with + New project.','bad');
+  }catch(e){ state.err=e.message; render(); toast('Delete failed',e.message,'bad'); }
+}
+function exportCSV(){
+  const head=['Product','Deliverable','Market','ASIN','Stage','Ball with','Days in stage','Designer','Lead','Head','PM','Priority','Due','Overdue','Blocked','Block reason','Lead revisions','Head revisions','Amazon rejections','Ticket','Started'];
+  const rows=filtered().map(p=>{const b=ballWith(p);return [p.product,p.dtype,p.market,p.asin,S[p.stage].label,b.name,daysBetween(p.stage_since),p.designer,p.lead,p.head,p.pm,p.priority,(p.due_date||'').slice(0,10),isOverdue(p)?'YES':'',p.blocked?'YES':'',p.block_reason,p.rev_lead||0,p.rev_head||0,p.rev_amz||0,p.ticket_id,(p.created_at||'').slice(0,10)];});
+  const csv=[head,...rows].map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(';')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='sportstech-creative-ops-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  toast('Exported',rows.length+' projects — semicolon separated, opens straight in German Excel.','ok');
+}
+function gotoProject(pid){
+  state.view='pipeline'; state.open.add(pid); state.f.flag=''; state.f.stage=''; render();
+  const el=document.querySelector(`[data-p="${pid}"]`);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.style.transition='box-shadow .4s'; el.style.boxShadow='0 0 0 2px var(--acc)';
+    setTimeout(()=>el.style.boxShadow='',1400); }
+}
+
+/* ============================ EVENTS ============================ */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,[data-ovl]'); if(!t) return;
+
+  if(t.dataset.ovl!==undefined && e.target===t) return closeModal();
+  const a=t.dataset.act;
+  if(a==='close') return closeModal();
+  if(a==='new') return modalNew();
+  if(a==='savenew') return doNew();
+  if(a==='domove') return doMove();
+  if(a==='doblock') return doBlock();
+  if(a==='dounblock') return doUnblock();
+  if(a==='doedit') return doEdit();
+  if(a==='who') return modalWho();
+  if(a==='setup') return modalSetup();
+  if(a==='csv') return exportCSV();
+  if(a==='wipe') return modalWipe();
+  if(a==='dodel') return doDel();
+  if(a==='dowipe') return doWipe();
+  if(a==='copysql'){ navigator.clipboard?.writeText(SQL).then(()=>toast('Copied','Paste it into the Supabase SQL editor and press Run.','ok'),()=>toast('Copy blocked','Select the text in the box and copy it manually.','bad')); return; }
+  if(a==='expandall'){ const l=filtered(); const allOpen=l.every(p=>state.open.has(p.id));
+    l.forEach(p=>allOpen?state.open.delete(p.id):state.open.add(p.id)); return render(); }
+
+  if(t.dataset.view){ state.view=t.dataset.view; return render(); }
+  if(t.dataset.signin){
+    const n=t.dataset.signin, first=!state.user;
+    state.user={name:n,role:roleOf(n)};
+    if(modalCtx) closeModal();
+    render();
+    if(!first) toast('Switched','Now acting as '+n+' — '+roleLb(state.user.role)+'.','ok');
+    return;
+  }
+  if(t.dataset.flag!==undefined){ state.f.flag=t.dataset.flag; return render(); }
+  if(t.dataset.tgl){ const id=t.dataset.tgl; state.open.has(id)?state.open.delete(id):state.open.add(id); return render(); }
+  if(t.dataset.dtab){ const [id,tab]=t.dataset.dtab.split('|'); state.dtab[id]=tab; return render(); }
+  if(t.dataset.move){ const [id,to]=t.dataset.move.split('|'); return modalMove(id,to); }
+  if(t.dataset.block) return modalBlock(t.dataset.block);
+  if(t.dataset.edit) return modalEdit(t.dataset.edit);
+  if(t.dataset.del) return modalDel(t.dataset.del);
+  if(t.dataset.goto) return gotoProject(t.dataset.goto);
+  if(t.dataset.say){ const id=t.dataset.say; return doSay(id,$('#say-'+id)?.value); }
+  if(t.dataset.q){ const i=t.dataset.q.indexOf('|'); return doSay(t.dataset.q.slice(0,i),t.dataset.q.slice(i+1)); }
+});
+document.addEventListener('change',e=>{
+  const s=e.target;
+  if(s.dataset.f!==undefined){ state.f[s.dataset.f]=s.value; return render(); }
+  if(s.dataset.amonth!==undefined){ state.amonth=s.value; return render(); }
+});
+document.addEventListener('input',e=>{
+  if(e.target.id==='f-q'){ state.f.q=e.target.value; render();
+    const i=$('#f-q'); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&modalCtx) return closeModal();
+  if(e.key==='Enter'&&!e.shiftKey&&e.target.id?.startsWith('say-')){
+    e.preventDefault(); return doSay(e.target.id.slice(4),e.target.value);
+  }
+  if(e.key==='/'&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)){ e.preventDefault(); $('#f-q')?.focus(); }
+});
+
+/* ============================ INIT ============================ */
+(async function init(){
+  try{ await Store.load(); }
+  catch(err){ state.err=err.message; }
+  render();
+  if(LIVE()) setInterval(async()=>{
+    if(modalCtx) return;
+    const ae=document.activeElement;
+    if(ae&&/^(INPUT|TEXTAREA)$/.test(ae.tagName)&&ae.value) return;
+    try{ await Store.load(); state.err=null; }catch(err){ state.err=err.message; }
+    if(state.user) render();
+  },POLL_MS);
+})();
+</script>
+</body>
+</html>
