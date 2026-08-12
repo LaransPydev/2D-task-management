@@ -6,8 +6,6 @@ import { requirePrisma } from "@/lib/prisma";
 import { toProjectRow } from "@/lib/data";
 import { getSessionUser } from "@/lib/session";
 import {
-  DTYPES,
-  MARKETS,
   MOVES,
   canAct,
   canEdit,
@@ -54,8 +52,8 @@ function afterWrite() {
 const NewProjectSchema = z.object({
   product: z.string().trim().min(1, "Product name is required."),
   asin: z.string().trim().optional().default(""),
-  dtype: z.string().refine((v) => DTYPES.includes(v), "Unknown deliverable type."),
-  market: z.string().refine((v) => MARKETS.includes(v), "Unknown market."),
+  dtype: z.string().trim().min(1),
+  market: z.string().trim().min(1),
   designer: z.string().trim().min(1, "A designer has to own it, otherwise nobody has the ball."),
   lead: z.string().trim().optional().default(""),
   head: z.string().trim().optional().default(""),
@@ -72,9 +70,15 @@ export async function createProjectAction(input: NewProjectInput) {
   const data = NewProjectSchema.parse(input);
 
   const db = requirePrisma();
-  const dbMembers = await db.member.findMany({ select: { name: true } });
-  const validDesigners = new Set([...peopleIn("designer"), ...dbMembers.map((m) => m.name)]);
-  if (!validDesigners.has(data.designer)) throw new Error("Unknown designer.");
+  const [dbMembers, dbDtypes, dbMarkets] = await Promise.all([
+    db.member.findMany({ select: { name: true } }),
+    db.deliverableType.findMany({ select: { name: true } }),
+    db.market.findMany({ select: { name: true } }),
+  ]);
+  if (!new Set([...peopleIn("designer"), ...dbMembers.map((m) => m.name)]).has(data.designer))
+    throw new Error("Unknown designer.");
+  if (!dbDtypes.some((d) => d.name === data.dtype)) throw new Error("Unknown deliverable type.");
+  if (!dbMarkets.some((m) => m.name === data.market)) throw new Error("Unknown market.");
 
   const project = await db.project.create({
     data: {

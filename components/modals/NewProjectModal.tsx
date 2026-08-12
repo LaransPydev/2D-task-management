@@ -4,7 +4,7 @@ import { useState } from "react";
 import ModalShell from "./ModalShell";
 import { useApp } from "../app-context";
 import { createProjectAction } from "@/app/actions/board";
-import { DTYPES, MARKETS, peopleIn } from "@/lib/domain";
+import { peopleIn } from "@/lib/domain";
 
 function inNDays(n: number) {
   return new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
@@ -14,8 +14,6 @@ export default function NewProjectModal() {
   const { user, closeModal, toast, refresh, setManyOpen, designers: dbDesigners, dbDtypes, dbMarkets } = useApp();
   const [busy, setBusy] = useState(false);
   const designers = [...peopleIn("designer"), ...dbDesigners];
-  const allDtypes = [...DTYPES, ...dbDtypes];
-  const allMarkets = [...MARKETS, ...dbMarkets];
   const leads = peopleIn("lead");
   const heads = peopleIn("head");
   const pms = peopleIn("pm");
@@ -86,16 +84,16 @@ export default function NewProjectModal() {
               <span>
                 Deliverable <em>*</em>
               </span>
-              <select name="dtype" defaultValue={allDtypes[0]}>
-                {allDtypes.map((d) => (
+              <select name="dtype" defaultValue={dbDtypes[0]}>
+                {dbDtypes.map((d) => (
                   <option key={d}>{d}</option>
                 ))}
               </select>
             </label>
             <label className="f1">
               <span>Market <em>*</em></span>
-              <select name="market" defaultValue={allMarkets[0]}>
-                {allMarkets.map((d) => (
+              <select name="market" defaultValue={dbMarkets[0]}>
+                {dbMarkets.map((d) => (
                   <option key={d}>{d}</option>
                 ))}
               </select>

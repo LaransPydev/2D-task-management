@@ -99,8 +99,8 @@ export async function loadBoard(): Promise<BoardData> {
       dbDtypes: dbDtypeRows.map((d) => d.name),
       dbMarkets: dbMarketRows.map((m) => m.name),
     };
-  } catch {
-    console.error("Database unavailable — rendering empty board.");
+  } catch (e) {
+    console.error("Database unavailable — rendering empty board.", e);
     return emptyBoard;
   }
 }

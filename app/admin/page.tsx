@@ -1,8 +1,13 @@
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/session";
 import { requirePrisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  const user = await getSessionUser();
+  if (!user || (user.role !== "head" && user.role !== "pm")) redirect("/");
+
   const db = requirePrisma();
   const projects = await db.project.findMany({ orderBy: { createdAt: "desc" } });
   const events = await db.event.findMany({ orderBy: { at: "desc" }, take: 50 });

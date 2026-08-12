@@ -4,7 +4,6 @@ import { useState } from "react";
 import ModalShell from "./ModalShell";
 import { useApp } from "../app-context";
 import { addMarketAction, removeMarketAction } from "@/app/actions/board";
-import { MARKETS } from "@/lib/domain";
 
 export default function ManageMarketsModal() {
   const { dbMarkets, closeModal, toast, refresh } = useApp();
@@ -46,9 +45,8 @@ export default function ManageMarketsModal() {
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. UK" style={{ flex: 1, padding: "6px 10px", border: "1px solid var(--brd)", borderRadius: 6, fontSize: 13 }} disabled={busy} autoFocus />
         <button type="submit" className="btn pri" disabled={busy || !name.trim()}>+ Add</button>
       </form>
-      <p style={{ fontSize: 11, color: "var(--tx-3)", marginBottom: 12 }}>Built-in: {MARKETS.join(", ")}</p>
       {dbMarkets.length === 0 ? (
-        <p style={{ color: "var(--tx-3)", fontSize: 13 }}>No custom markets added yet.</p>
+        <p style={{ color: "var(--tx-3)", fontSize: 13 }}>No markets yet.</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
           {dbMarkets.map((m) => (

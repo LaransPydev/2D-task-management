@@ -8,14 +8,14 @@ import {
   addDeliverableTypeAction, removeDeliverableTypeAction,
   addMarketAction, removeMarketAction,
 } from "@/app/actions/board";
-import { DTYPES, MARKETS, peopleIn, initials, avColor } from "@/lib/domain";
+import { peopleIn, initials, avColor } from "@/lib/domain";
 
 type Tab = "designers" | "dtypes" | "markets";
 
 function Section({
-  items, builtIn, placeholder, isDesigner, onAdd, onRemove, busy,
+  items, builtIn = [], placeholder, isDesigner, onAdd, onRemove, busy,
 }: {
-  items: string[]; builtIn: string[]; placeholder: string; isDesigner?: boolean;
+  items: string[]; builtIn?: string[]; placeholder: string; isDesigner?: boolean;
   onAdd: (n: string) => Promise<void>; onRemove: (n: string) => Promise<void>; busy: boolean;
 }) {
   const [val, setVal] = useState("");
@@ -55,21 +55,23 @@ function Section({
         </div>
       )}
 
-      <div>
-        <p style={{ fontSize: 11, fontWeight: 600, color: "#8E9294", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 10 }}>Built-in (cannot remove)</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {builtIn.map((item) => (
-            <div key={item} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: isDesigner ? "5px 10px 5px 8px" : "5px 10px", borderRadius: 20, background: "#FAFBFB", border: "1px solid #E4E7E9", fontSize: 12, color: "#8E9294" }}>
-              {isDesigner && (
-                <i style={{ width: 22, height: 22, borderRadius: "50%", background: avColor(item), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#fff", fontStyle: "normal", fontWeight: 700, flexShrink: 0, opacity: 0.5 }}>
-                  {initials(item)}
-                </i>
-              )}
-              <span>{item}</span>
-            </div>
-          ))}
+      {builtIn.length > 0 && (
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "#8E9294", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 10 }}>Built-in (cannot remove)</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {builtIn.map((item) => (
+              <div key={item} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: isDesigner ? "5px 10px 5px 8px" : "5px 10px", borderRadius: 20, background: "#FAFBFB", border: "1px solid #E4E7E9", fontSize: 12, color: "#8E9294" }}>
+                {isDesigner && (
+                  <i style={{ width: 22, height: 22, borderRadius: "50%", background: avColor(item), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#fff", fontStyle: "normal", fontWeight: 700, flexShrink: 0, opacity: 0.5 }}>
+                    {initials(item)}
+                  </i>
+                )}
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -113,14 +115,14 @@ export default function ManageRosterModal() {
         />
       )}
       {tab === "dtypes" && (
-        <Section items={dbDtypes} builtIn={DTYPES} placeholder="e.g. Packaging Design"
+        <Section items={dbDtypes} placeholder="e.g. Packaging Design"
           onAdd={(n) => act(() => addDeliverableTypeAction({ name: n }), `"${n}" added`)}
           onRemove={(n) => act(() => removeDeliverableTypeAction(n), `"${n}" removed`)}
           busy={busy}
         />
       )}
       {tab === "markets" && (
-        <Section items={dbMarkets} builtIn={MARKETS} placeholder="e.g. UK"
+        <Section items={dbMarkets} placeholder="e.g. UK"
           onAdd={(n) => act(() => addMarketAction({ name: n }), `"${n}" added`)}
           onRemove={(n) => act(() => removeMarketAction(n), `"${n}" removed`)}
           busy={busy}

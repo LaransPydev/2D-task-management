@@ -1,7 +1,7 @@
 "use client";
 
 import { useApp } from "./app-context";
-import { DTYPES, MARKETS, STAGES, AGE_CRIT, monthLabel } from "@/lib/domain";
+import { STAGES, AGE_CRIT, monthLabel } from "@/lib/domain";
 import { monthsAvailable } from "@/lib/analytics";
 import { filterProjects } from "@/lib/filter";
 
@@ -16,7 +16,7 @@ function FlagButton({ k, label, alarm }: { k: string; label: string; alarm?: boo
 }
 
 export default function FilterBar() {
-  const { projects, events, filters, setFilter, user, isFull, open, setManyOpen, openModal } = useApp();
+  const { projects, events, filters, setFilter, user, isFull, open, setManyOpen, openModal, dbDtypes, dbMarkets } = useApp();
   const designers = [...new Set(projects.map((p) => p.designer))].filter((x): x is string => !!x).sort();
   const months = monthsAvailable(projects, events);
   const list = filterProjects(projects, filters, user);
@@ -39,7 +39,7 @@ export default function FilterBar() {
         <label>Deliverable</label>
         <select value={filters.dtype} onChange={(e) => setFilter("dtype", e.target.value)}>
           <option value="">All</option>
-          {DTYPES.map((d) => (
+          {dbDtypes.map((d) => (
             <option key={d} value={d}>
               {d}
             </option>
@@ -50,7 +50,7 @@ export default function FilterBar() {
         <label>Market</label>
         <select value={filters.market} onChange={(e) => setFilter("market", e.target.value)}>
           <option value="">All</option>
-          {MARKETS.map((d) => (
+          {dbMarkets.map((d) => (
             <option key={d} value={d}>
               {d}
             </option>

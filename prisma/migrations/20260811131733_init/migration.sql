@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "projects" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "product" TEXT NOT NULL,
     "asin" TEXT NOT NULL DEFAULT '',
     "dtype" TEXT NOT NULL,
@@ -11,9 +11,9 @@ CREATE TABLE "projects" (
     "pm" TEXT,
     "stage" TEXT NOT NULL DEFAULT 'product',
     "priority" TEXT NOT NULL DEFAULT 'med',
-    "due_date" DATETIME,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "stage_since" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "due_date" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "stage_since" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "ticket_id" TEXT NOT NULL DEFAULT '',
     "ticket_url" TEXT NOT NULL DEFAULT '',
     "brief_url" TEXT NOT NULL DEFAULT '',
@@ -22,56 +22,66 @@ CREATE TABLE "projects" (
     "block_reason" TEXT NOT NULL DEFAULT '',
     "rev_lead" INTEGER NOT NULL DEFAULT 0,
     "rev_head" INTEGER NOT NULL DEFAULT 0,
-    "rev_amz" INTEGER NOT NULL DEFAULT 0
+    "rev_amz" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "projects_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "events" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "project_id" TEXT NOT NULL,
-    "at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "actor" TEXT NOT NULL,
     "actor_role" TEXT NOT NULL,
     "kind" TEXT NOT NULL,
     "from_stage" TEXT,
     "to_stage" TEXT,
     "note" TEXT,
-    CONSTRAINT "events_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "projects" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "events_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "comments" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "project_id" TEXT NOT NULL,
-    "at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "actor" TEXT NOT NULL,
     "actor_role" TEXT NOT NULL,
     "text" TEXT NOT NULL,
-    CONSTRAINT "comments_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "projects" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "comments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "members" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "created_by" TEXT NOT NULL
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_by" TEXT NOT NULL,
+
+    CONSTRAINT "members_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "deliverable_types" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "created_by" TEXT NOT NULL
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_by" TEXT NOT NULL,
+
+    CONSTRAINT "deliverable_types_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "markets" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "created_by" TEXT NOT NULL
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_by" TEXT NOT NULL,
+
+    CONSTRAINT "markets_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -88,3 +98,9 @@ CREATE UNIQUE INDEX "deliverable_types_name_key" ON "deliverable_types"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "markets_name_key" ON "markets"("name");
+
+-- AddForeignKey
+ALTER TABLE "events" ADD CONSTRAINT "events_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "comments" ADD CONSTRAINT "comments_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;

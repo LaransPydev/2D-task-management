@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import ModalShell from "./ModalShell";
 import { useApp } from "../app-context";
 import { editAction } from "@/app/actions/board";
-import { DTYPES, MARKETS, peopleIn } from "@/lib/domain";
+import { peopleIn } from "@/lib/domain";
 
 export default function EditModal({ projectId }: { projectId: string }) {
-  const { projects, closeModal, toast, refresh } = useApp();
+  const { projects, closeModal, toast, refresh, dbDtypes, dbMarkets } = useApp();
   const [busy, setBusy] = useState(false);
   const p = projects.find((x) => x.id === projectId);
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function EditModal({ projectId }: { projectId: string }) {
             <label className="f1">
               <span>Deliverable</span>
               <select name="dtype" defaultValue={p.dtype}>
-                {DTYPES.map((d) => (
+                {dbDtypes.map((d) => (
                   <option key={d}>{d}</option>
                 ))}
               </select>
@@ -72,7 +72,7 @@ export default function EditModal({ projectId }: { projectId: string }) {
             <label className="f1">
               <span>Market</span>
               <select name="market" defaultValue={p.market}>
-                {MARKETS.map((d) => (
+                {dbMarkets.map((d) => (
                   <option key={d}>{d}</option>
                 ))}
               </select>

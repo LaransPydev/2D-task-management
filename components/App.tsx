@@ -16,7 +16,7 @@ import AttnView from "./views/AttnView";
 import ModalRoot from "./modals/ModalRoot";
 import Toasts from "./Toasts";
 
-const POLL_MS = 0; // polling disabled — manual refresh only
+const POLL_MS = 6000;
 
 async function fetcher(url: string): Promise<BoardData> {
   const res = await fetch(url, { cache: "no-store" });
