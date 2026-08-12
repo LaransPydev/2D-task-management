@@ -8,6 +8,10 @@ import EditModal from "./EditModal";
 import WhoModal from "./WhoModal";
 import DeleteModal from "./DeleteModal";
 import WipeModal from "./WipeModal";
+import ManageDesignersModal from "./ManageDesignersModal";
+import ManageDtypesModal from "./ManageDtypesModal";
+import ManageMarketsModal from "./ManageMarketsModal";
+import ManageRosterModal from "./ManageRosterModal";
 
 export default function ModalRoot() {
   const { modal } = useApp();
@@ -27,6 +31,14 @@ export default function ModalRoot() {
       return <DeleteModal projectId={modal.projectId} />;
     case "wipe":
       return <WipeModal />;
+    case "designers":
+      return <ManageDesignersModal />;
+    case "dtypes":
+      return <ManageDtypesModal />;
+    case "mktypes":
+      return <ManageMarketsModal />;
+    case "roster":
+      return <ManageRosterModal />;
     default:
       return null;
   }

@@ -26,11 +26,13 @@ export default function TopBar({ activeCount, attnCount, isValidating }: { activ
   return (
     <div className="topbar">
       <div className="brand">
-        <div className="brand-mark" />
-        <div className="brand-txt">
-          <b>Sportstech</b>
-          <span>Creative Ops{isValidating ? " · syncing…" : ""}</span>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://www.sportstech.de/cdn/shop/files/logo__4_59d2ab76-f9f0-4f4f-804d-618913cd4325.svg?v=1775131600&width=212"
+          alt="Sportstech"
+          style={{ height: 28, width: "auto", objectFit: "contain" }}
+        />
+        {isValidating && <span style={{ fontSize: 11, color: "var(--tx-3)", marginLeft: 8 }}>syncing…</span>}
       </div>
       <div className="tabs">
         {tabs.map((t) => (
@@ -44,6 +46,9 @@ export default function TopBar({ activeCount, attnCount, isValidating }: { activ
           <button className="btn pri sm" onClick={() => openModal({ kind: "new" })}>
             + New project
           </button>
+        )}
+        {(user.role === "lead" || user.role === "head" || user.role === "pm") && (
+          <button className="btn sm" onClick={() => openModal({ kind: "roster" })}>⚙ Manage</button>
         )}
         <button className="who" onClick={() => openModal({ kind: "who" })}>
           <Avatar name={user.name} />

@@ -21,6 +21,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import crypto from "node:crypto";
 import { isValidRosterName, roleOf, type SessionUser } from "./domain";
+import { prisma } from "./prisma";
 
 const COOKIE_NAME = "sco_session";
 const MAX_AGE = 60 * 60 * 24 * 90; // 90 days
@@ -63,13 +64,21 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const token = store.get(COOKIE_NAME)?.value;
   if (!token) return null;
   const name = verify(token);
-  if (!name || !isValidRosterName(name)) return null;
-  return { name, role: roleOf(name) };
+  if (!name) return null;
+  if (isValidRosterName(name)) return { name, role: roleOf(name) };
+  // check DB members (dynamically added designers)
+  const member = await prisma?.member.findUnique({ where: { name }, select: { name: true } });
+  if (!member) return null;
+  return { name, role: "designer" };
 }
 
 /** Set the session cookie. Only callable from a Server Action / Route Handler. */
 export async function setSessionCookie(name: string) {
-  if (!isValidRosterName(name)) throw new Error("Unknown name — not on the roster.");
+  const inRoster = isValidRosterName(name);
+  if (!inRoster) {
+    const member = await prisma?.member.findUnique({ where: { name }, select: { name: true } });
+    if (!member) throw new Error("Unknown name — not on the roster.");
+  }
   const store = await cookies();
   store.set(COOKIE_NAME, sign(name), {
     httpOnly: true,

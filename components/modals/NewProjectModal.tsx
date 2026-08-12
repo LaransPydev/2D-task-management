@@ -11,9 +11,11 @@ function inNDays(n: number) {
 }
 
 export default function NewProjectModal() {
-  const { user, closeModal, toast, refresh, setManyOpen } = useApp();
+  const { user, closeModal, toast, refresh, setManyOpen, designers: dbDesigners, dbDtypes, dbMarkets } = useApp();
   const [busy, setBusy] = useState(false);
-  const designers = peopleIn("designer");
+  const designers = [...peopleIn("designer"), ...dbDesigners];
+  const allDtypes = [...DTYPES, ...dbDtypes];
+  const allMarkets = [...MARKETS, ...dbMarkets];
   const leads = peopleIn("lead");
   const heads = peopleIn("head");
   const pms = peopleIn("pm");
@@ -23,8 +25,14 @@ export default function NewProjectModal() {
     const fd = new FormData(e.currentTarget);
     const product = String(fd.get("product") || "").trim();
     const designer = String(fd.get("designer") || "");
+    const due = String(fd.get("due") || "").trim();
+    const lead = String(fd.get("lead") || "").trim();
+    const head = String(fd.get("head") || "").trim();
     if (!product) return toast("Missing", "Product name is required.", "bad");
     if (!designer) return toast("Missing", "A designer has to own it, otherwise nobody has the ball.", "bad");
+    if (!due) return toast("Missing", "Due date is required.", "bad");
+    if (!lead) return toast("Missing", "Team Lead is required.", "bad");
+    if (!head) return toast("Missing", "Team Head is required.", "bad");
     setBusy(true);
     try {
       const created = await createProjectAction({
@@ -33,11 +41,11 @@ export default function NewProjectModal() {
         dtype: String(fd.get("dtype")),
         market: String(fd.get("market")),
         designer,
-        lead: String(fd.get("lead") || ""),
-        head: String(fd.get("head") || ""),
+        lead: lead,
+        head: head,
         pm: String(fd.get("pm") || ""),
         priority: String(fd.get("priority") || "med") as "high" | "med" | "low",
-        dueDate: String(fd.get("due") || "") || null,
+        dueDate: due || null,
         note: String(fd.get("note") || ""),
       });
       await refresh();
@@ -78,22 +86,22 @@ export default function NewProjectModal() {
               <span>
                 Deliverable <em>*</em>
               </span>
-              <select name="dtype" defaultValue={DTYPES[0]}>
-                {DTYPES.map((d) => (
+              <select name="dtype" defaultValue={allDtypes[0]}>
+                {allDtypes.map((d) => (
                   <option key={d}>{d}</option>
                 ))}
               </select>
             </label>
             <label className="f1">
-              <span>Market</span>
-              <select name="market" defaultValue={MARKETS[0]}>
-                {MARKETS.map((d) => (
+              <span>Market <em>*</em></span>
+              <select name="market" defaultValue={allMarkets[0]}>
+                {allMarkets.map((d) => (
                   <option key={d}>{d}</option>
                 ))}
               </select>
             </label>
             <label className="f1">
-              <span>Priority</span>
+              <span>Priority <em>*</em></span>
               <select name="priority" defaultValue="med">
                 <option value="high">High</option>
                 <option value="med">Medium</option>
@@ -116,22 +124,22 @@ export default function NewProjectModal() {
               </select>
             </label>
             <label className="f1">
-              <span>Due date</span>
-              <input type="date" name="due" defaultValue={inNDays(7)} />
+              <span>Due date <em>*</em></span>
+              <input type="date" name="due" defaultValue={inNDays(7)} required />
             </label>
           </div>
           <div className="frow">
             <label className="f1">
-              <span>Team Lead</span>
-              <select name="lead" defaultValue={user.role === "lead" ? user.name : leads[0] || ""}>
+              <span>Team Lead <em>*</em></span>
+              <select name="lead" defaultValue={user.role === "lead" ? user.name : leads[0] || ""} required>
                 {leads.map((d) => (
                   <option key={d}>{d}</option>
                 ))}
               </select>
             </label>
             <label className="f1">
-              <span>Team Head</span>
-              <select name="head" defaultValue={user.role === "head" ? user.name : heads[0] || ""}>
+              <span>Team Head <em>*</em></span>
+              <select name="head" defaultValue={user.role === "head" ? user.name : heads[0] || ""} required>
                 {heads.map((d) => (
                   <option key={d}>{d}</option>
                 ))}

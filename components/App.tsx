@@ -6,6 +6,7 @@ import { AppContext, EMPTY_FILTERS, type AppCtx, type Filters, type ModalState, 
 import type { BoardData } from "@/lib/data";
 import { isFull as computeFull, isReadonly as computeReadonly, type SessionUser } from "@/lib/domain";
 import { attnRed } from "@/lib/analytics";
+import { logViewAction } from "@/app/actions/board";
 import TopBar from "./TopBar";
 import ModeStrip from "./ModeStrip";
 import PipelineView from "./views/PipelineView";
@@ -15,7 +16,7 @@ import AttnView from "./views/AttnView";
 import ModalRoot from "./modals/ModalRoot";
 import Toasts from "./Toasts";
 
-const POLL_MS = 6000;
+const POLL_MS = 0; // polling disabled — manual refresh only
 
 async function fetcher(url: string): Promise<BoardData> {
   const res = await fetch(url, { cache: "no-store" });
@@ -34,8 +35,8 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
   const { data, error, mutate, isValidating } = useSWR<BoardData>("/api/board", fetcher, {
     fallbackData: initialBoard,
     refreshInterval: POLL_MS,
-    revalidateOnFocus: true,
-    revalidateOnMount: true, // fallbackData alone doesn't guarantee an initial poll -- force one so "last check" and the 6s cadence start immediately
+    revalidateOnFocus: false,
+    revalidateOnMount: true,
     dedupingInterval: 1500,
     onSuccess: () => setLastSync(Date.now()),
   });
@@ -65,8 +66,12 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
   const toggleOpen = useCallback((id: string) => {
     setOpen((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        logViewAction(id).catch(() => {}); // fire-and-forget: log the card view
+      }
       return next;
     });
   }, []);
@@ -107,6 +112,9 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
   const projects = data?.projects ?? initialBoard.projects;
   const events = data?.events ?? initialBoard.events;
   const comments = data?.comments ?? initialBoard.comments;
+  const designers = data?.designers ?? initialBoard.designers ?? [];
+  const dbDtypes = data?.dbDtypes ?? initialBoard.dbDtypes ?? [];
+  const dbMarkets = data?.dbMarkets ?? initialBoard.dbMarkets ?? [];
 
   const ctx: AppCtx = useMemo(
     () => ({
@@ -116,6 +124,9 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
       projects,
       events,
       comments,
+      designers,
+      dbDtypes,
+      dbMarkets,
       connError: error ? error.message : null,
       lastSync,
       refresh,
@@ -142,6 +153,9 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
       projects,
       events,
       comments,
+      designers,
+      dbDtypes,
+      dbMarkets,
       error,
       lastSync,
       refresh,

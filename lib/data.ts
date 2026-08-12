@@ -61,6 +61,9 @@ export interface BoardData {
   projects: ProjectRow[];
   events: EventRow[];
   comments: CommentRow[];
+  designers: string[];
+  dbDtypes: string[];
+  dbMarkets: string[];
 }
 
 /** Everything the pipeline UI needs, in one round trip. Small team + small
@@ -68,15 +71,36 @@ export interface BoardData {
  *  comment history up front is simpler and fast enough — same as the
  *  original file's approach. Revisit with pagination if the team's history
  *  grows into the thousands of events. */
+const emptyBoard: BoardData = {
+  projects: [],
+  events: [],
+  comments: [],
+  designers: [],
+  dbDtypes: [],
+  dbMarkets: [],
+};
+
 export async function loadBoard(): Promise<BoardData> {
-  const [projects, events, comments] = await Promise.all([
-    prisma.project.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.event.findMany({ orderBy: { at: "asc" } }),
-    prisma.comment.findMany({ orderBy: { at: "asc" } }),
-  ]);
-  return {
-    projects: projects.map(toProjectRow),
-    events: events.map(toEventRow),
-    comments: comments.map(toCommentRow),
-  };
+  if (!prisma) return emptyBoard;
+  try {
+    const [projects, events, comments, dbMembers, dbDtypeRows, dbMarketRows] = await Promise.all([
+      prisma.project.findMany({ orderBy: { createdAt: "desc" } }),
+      prisma.event.findMany({ orderBy: { at: "asc" } }),
+      prisma.comment.findMany({ orderBy: { at: "asc" } }),
+      prisma.member.findMany({ orderBy: { createdAt: "asc" } }),
+      prisma.deliverableType.findMany({ orderBy: { createdAt: "asc" } }),
+      prisma.market.findMany({ orderBy: { createdAt: "asc" } }),
+    ]);
+    return {
+      projects: projects.map(toProjectRow),
+      events: events.map(toEventRow),
+      comments: comments.map(toCommentRow),
+      designers: dbMembers.map((m) => m.name),
+      dbDtypes: dbDtypeRows.map((d) => d.name),
+      dbMarkets: dbMarketRows.map((m) => m.name),
+    };
+  } catch {
+    console.error("Database unavailable — rendering empty board.");
+    return emptyBoard;
+  }
 }

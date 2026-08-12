@@ -8,7 +8,7 @@ import { roleLb, TEAM_SIZE } from "@/lib/domain";
 import { signOutAction } from "@/app/actions/auth";
 
 export default function WhoModal() {
-  const { user, isReadonly, isFull, closeModal } = useApp();
+  const { user, isReadonly, isFull, closeModal, designers } = useApp();
   // Signing in as someone else re-renders the server tree with a new `user`
   // prop; once it changes from who opened this modal, the switch succeeded
   // and the modal can close itself.
@@ -32,7 +32,7 @@ export default function WhoModal() {
           </div>
         </div>
         <div className="gate-card" style={{ boxShadow: "none", padding: 0 }}>
-          <PeoplePicker currentName={user.name} />
+          <PeoplePicker currentName={user.name} extraDesigners={designers} />
         </div>
       </div>
       <div className="modal-f">

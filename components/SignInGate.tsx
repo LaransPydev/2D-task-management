@@ -17,12 +17,12 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
-export function PeoplePicker({ currentName }: { currentName?: string }) {
+export function PeoplePicker({ currentName, extraDesigners = [] }: { currentName?: string; extraDesigners?: string[] }) {
   return (
     <>
       {GRP.map(([r, lb]) => {
         const desc = ROLES.find((x) => x.id === r)?.d || "";
-        const people = peopleIn(r);
+        const people = r === "designer" ? [...peopleIn(r), ...extraDesigners] : peopleIn(r);
         return (
           <div className="rgroup" key={r}>
             <div className="rgroup-h">

@@ -31,6 +31,10 @@ export type ModalState =
   | { kind: "who" }
   | { kind: "del"; projectId: string }
   | { kind: "wipe" }
+  | { kind: "designers" }
+  | { kind: "dtypes" }
+  | { kind: "mktypes" }
+  | { kind: "roster" }
   | null;
 
 export interface AppCtx {
@@ -40,6 +44,9 @@ export interface AppCtx {
   projects: ProjectRow[];
   events: EventRow[];
   comments: CommentRow[];
+  designers: string[];
+  dbDtypes: string[];
+  dbMarkets: string[];
   connError: string | null;
   lastSync: number | null;
 

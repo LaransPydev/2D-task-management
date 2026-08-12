@@ -3,6 +3,8 @@ import { loadBoard } from "@/lib/data";
 import SignInGate from "@/components/SignInGate";
 import App from "@/components/App";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const user = await getSessionUser();
   if (!user) return <SignInGate />;

@@ -335,6 +335,7 @@ export function shortType(t: string): string {
 
 export function evVerb(e: EventRow): string {
   if (e.kind === "create") return "created the project";
+  if (e.kind === "view") return "viewed this card";
   if (e.kind === "comment") return "asked in chat";
   if (e.kind === "block") return "flagged this as blocked";
   if (e.kind === "unblock") return "cleared the block";

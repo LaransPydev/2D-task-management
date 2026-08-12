@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { requirePrisma } from "@/lib/prisma";
 import { toProjectRow } from "@/lib/data";
 import { getSessionUser } from "@/lib/session";
 import {
@@ -41,7 +41,7 @@ async function logEvent(
   to: string | null,
   note: string | null,
 ) {
-  await prisma.event.create({
+  await requirePrisma().event.create({
     data: { projectId, actor: actor.name, actorRole: actor.role, kind, fromStage: from, toStage: to, note },
   });
 }
@@ -71,10 +71,12 @@ export async function createProjectAction(input: NewProjectInput) {
   requireNotReadonly(user);
   const data = NewProjectSchema.parse(input);
 
-  const validDesigners = new Set(peopleIn("designer"));
+  const db = requirePrisma();
+  const dbMembers = await db.member.findMany({ select: { name: true } });
+  const validDesigners = new Set([...peopleIn("designer"), ...dbMembers.map((m) => m.name)]);
   if (!validDesigners.has(data.designer)) throw new Error("Unknown designer.");
 
-  const project = await prisma.project.create({
+  const project = await db.project.create({
     data: {
       product: data.product,
       asin: data.asin,
@@ -109,7 +111,7 @@ export async function moveStageAction(input: MoveInput) {
   requireNotReadonly(user);
   const { projectId, to, note: rawNote, reason, ticket } = MoveSchema.parse(input);
 
-  const dbProject = await prisma.project.findUnique({ where: { id: projectId } });
+  const dbProject = await requirePrisma().project.findUnique({ where: { id: projectId } });
   if (!dbProject) throw new Error("Project not found.");
   const p = toProjectRow(dbProject);
 
@@ -131,7 +133,7 @@ export async function moveStageAction(input: MoveInput) {
   if (to === "amz_rej") patch.revAmz = (p.revAmz || 0) + 1;
   if (to === "ticket") patch.ticketId = ticket;
 
-  const updated = await prisma.project.update({ where: { id: projectId }, data: patch });
+  const updated = await requirePrisma().project.update({ where: { id: projectId }, data: patch });
   await logEvent(projectId, user, "stage", p.stage, to, note || null);
   afterWrite();
   return toProjectRow(updated);
@@ -143,12 +145,12 @@ export async function blockAction(input: z.infer<typeof BlockSchema>) {
   const user = await requireUser();
   requireNotReadonly(user);
   const { projectId, reason } = BlockSchema.parse(input);
-  const dbProject = await prisma.project.findUnique({ where: { id: projectId } });
+  const dbProject = await requirePrisma().project.findUnique({ where: { id: projectId } });
   if (!dbProject) throw new Error("Project not found.");
   const p = toProjectRow(dbProject);
   if (!canEdit(user, p)) throw new Error("You can only flag your own projects (or your team's) as blocked.");
 
-  const updated = await prisma.project.update({ where: { id: projectId }, data: { blocked: true, blockReason: reason } });
+  const updated = await requirePrisma().project.update({ where: { id: projectId }, data: { blocked: true, blockReason: reason } });
   await logEvent(projectId, user, "block", p.stage, p.stage, reason);
   afterWrite();
   return toProjectRow(updated);
@@ -159,12 +161,12 @@ export async function unblockAction(input: z.infer<typeof UnblockSchema>) {
   const user = await requireUser();
   requireNotReadonly(user);
   const { projectId, note } = UnblockSchema.parse(input);
-  const dbProject = await prisma.project.findUnique({ where: { id: projectId } });
+  const dbProject = await requirePrisma().project.findUnique({ where: { id: projectId } });
   if (!dbProject) throw new Error("Project not found.");
   const p = toProjectRow(dbProject);
   if (!canEdit(user, p)) throw new Error("You can only clear a block on your own projects (or your team's).");
 
-  const updated = await prisma.project.update({ where: { id: projectId }, data: { blocked: false, blockReason: "" } });
+  const updated = await requirePrisma().project.update({ where: { id: projectId }, data: { blocked: false, blockReason: "" } });
   await logEvent(projectId, user, "unblock", p.stage, p.stage, note || "Block cleared");
   afterWrite();
   return toProjectRow(updated);
@@ -193,7 +195,7 @@ export async function editAction(input: EditInput) {
   const user = await requireUser();
   requireNotReadonly(user);
   const data = EditSchema.parse(input);
-  const dbProject = await prisma.project.findUnique({ where: { id: data.projectId } });
+  const dbProject = await requirePrisma().project.findUnique({ where: { id: data.projectId } });
   if (!dbProject) throw new Error("Project not found.");
   const p = toProjectRow(dbProject);
   if (!canEdit(user, p)) throw new Error("You can only edit your own projects.");
@@ -217,7 +219,7 @@ export async function editAction(input: EditInput) {
     }
   }
 
-  const updated = await prisma.project.update({ where: { id: data.projectId }, data: patch });
+  const updated = await requirePrisma().project.update({ where: { id: data.projectId }, data: patch });
   if (changed.length) await logEvent(data.projectId, user, "edit", p.stage, p.stage, "Updated: " + changed.join(", "));
   afterWrite();
   return { project: toProjectRow(updated), changed: changed.length };
@@ -229,18 +231,96 @@ export async function commentAction(input: z.infer<typeof CommentSchema>) {
   const user = await requireUser();
   requireNotReadonly(user);
   const { projectId, text } = CommentSchema.parse(input);
-  const exists = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
+  const db = requirePrisma();
+  const exists = await db.project.findUnique({ where: { id: projectId }, select: { id: true } });
   if (!exists) throw new Error("Project not found.");
-  const comment = await prisma.comment.create({ data: { projectId, actor: user.name, actorRole: user.role, text } });
+  const comment = await db.comment.create({ data: { projectId, actor: user.name, actorRole: user.role, text } });
   afterWrite();
   return { id: comment.id, projectId, at: comment.at.toISOString(), actor: comment.actor, actorRole: comment.actorRole, text: comment.text };
+}
+
+/* ============================ VIEW ============================ */
+export async function logViewAction(projectId: string) {
+  const user = await getSessionUser();
+  if (!user) return; // visitors who aren't signed in — silently skip
+  const db = requirePrisma();
+  const exists = await db.project.findUnique({ where: { id: projectId }, select: { id: true } });
+  if (!exists) return;
+  await logEvent(projectId, user, "view", null, null, null);
+  // no revalidatePath — a view shouldn't trigger a full board refresh
+}
+
+/* ============================ MANAGE DELIVERABLE TYPES & MARKETS ============================ */
+const NameSchema = z.object({ name: z.string().trim().min(1).max(60) });
+
+export async function addDeliverableTypeAction(input: z.infer<typeof NameSchema>) {
+  const user = await requireUser();
+  if (user.role !== "lead" && user.role !== "head" && user.role !== "pm")
+    throw new Error("Only Team Lead, Team Head, or Project Manager can add deliverable types.");
+  const { name } = NameSchema.parse(input);
+  const db = requirePrisma();
+  const exists = await db.deliverableType.findUnique({ where: { name } });
+  if (exists) throw new Error(`"${name}" already exists.`);
+  await db.deliverableType.create({ data: { id: crypto.randomUUID(), name, createdBy: user.name } });
+  afterWrite();
+}
+
+export async function removeDeliverableTypeAction(name: string) {
+  const user = await requireUser();
+  if (user.role !== "lead" && user.role !== "head" && user.role !== "pm")
+    throw new Error("Only Team Lead, Team Head, or Project Manager can remove deliverable types.");
+  await requirePrisma().deliverableType.delete({ where: { name } });
+  afterWrite();
+}
+
+export async function addMarketAction(input: z.infer<typeof NameSchema>) {
+  const user = await requireUser();
+  if (user.role !== "lead" && user.role !== "head" && user.role !== "pm")
+    throw new Error("Only Team Lead, Team Head, or Project Manager can add markets.");
+  const { name } = NameSchema.parse(input);
+  const db = requirePrisma();
+  const exists = await db.market.findUnique({ where: { name } });
+  if (exists) throw new Error(`"${name}" already exists.`);
+  await db.market.create({ data: { id: crypto.randomUUID(), name, createdBy: user.name } });
+  afterWrite();
+}
+
+export async function removeMarketAction(name: string) {
+  const user = await requireUser();
+  if (user.role !== "lead" && user.role !== "head" && user.role !== "pm")
+    throw new Error("Only Team Lead, Team Head, or Project Manager can remove markets.");
+  await requirePrisma().market.delete({ where: { name } });
+  afterWrite();
+}
+
+/* ============================ MANAGE DESIGNERS ============================ */
+const AddDesignerSchema = z.object({ name: z.string().trim().min(2).max(60) });
+
+export async function addDesignerAction(input: z.infer<typeof AddDesignerSchema>) {
+  const user = await requireUser();
+  if (user.role !== "lead" && user.role !== "head" && user.role !== "pm")
+    throw new Error("Only Team Lead, Team Head, or Project Manager can add designers.");
+  const { name } = AddDesignerSchema.parse(input);
+  const db = requirePrisma();
+  const exists = await db.member.findUnique({ where: { name } });
+  if (exists) throw new Error(`"${name}" is already in the roster.`);
+  await db.member.create({ data: { id: crypto.randomUUID(), name, createdBy: user.name } });
+  afterWrite();
+}
+
+export async function removeDesignerAction(name: string) {
+  const user = await requireUser();
+  if (user.role !== "lead" && user.role !== "head" && user.role !== "pm")
+    throw new Error("Only Team Lead, Team Head, or Project Manager can remove designers.");
+  await requirePrisma().member.delete({ where: { name } });
+  afterWrite();
 }
 
 /* ============================ DELETE / WIPE ============================ */
 export async function deleteProjectAction(projectId: string) {
   const user = await requireUser();
   if (!isFull(user)) throw new Error("Only the Team Head or Project Manager can delete a project.");
-  await prisma.project.delete({ where: { id: projectId } }); // events/comments cascade
+  await requirePrisma().project.delete({ where: { id: projectId } }); // events/comments cascade
   afterWrite();
   return { ok: true };
 }
@@ -249,7 +329,7 @@ export async function wipeAllAction(confirm: string) {
   const user = await requireUser();
   if (!isFull(user)) throw new Error("Only the Team Head or Project Manager can clear the board.");
   if (confirm.trim().toUpperCase() !== "DELETE") throw new Error("Type DELETE exactly, so this cannot happen by accident.");
-  const { count } = await prisma.project.deleteMany({});
+  const { count } = await requirePrisma().project.deleteMany({});
   afterWrite();
   return { count };
 }
