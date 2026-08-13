@@ -20,6 +20,7 @@ export default function BoardView() {
       <div className="board">
         {STAGES.map((s) => {
           const col = list.filter((p) => p.stage === s.id);
+          if (col.length === 0) return null;
           return (
             <div className="col" key={s.id}>
               <div className="col-h">
@@ -30,8 +31,7 @@ export default function BoardView() {
                 <span className="c">{col.length}</span>
               </div>
               <div className="col-b">
-                {col.length ? (
-                  col.map((p) => {
+                {col.map((p) => {
                     const b = ballWith(p);
                     const d = daysBetween(p.stageSince);
                     return (
@@ -51,10 +51,7 @@ export default function BoardView() {
                         </span>
                       </button>
                     );
-                  })
-                ) : (
-                  <div className="col-empty">empty</div>
-                )}
+                })}
               </div>
             </div>
           );

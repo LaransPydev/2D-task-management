@@ -121,7 +121,8 @@ export const ROSTER: Person[] = [
 ];
 export const TEAM_SIZE = ROSTER.filter((p) => p.role !== "visitor").length;
 
-
+export const DTYPES = ["Main Image", "Main Gallery", "A+ Content", "Premium Gallery", "Brand Story", "Infographic Set", "Video", "Variation Images"];
+export const MARKETS = ["DE", "FR", "ES", "IT", "US"];
 export const REJECT_REASONS = [
   "Text/claim not allowed",
   "Image quality / resolution",

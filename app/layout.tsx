@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
+import React from "react";
 import "./globals.css";
 
 const sans = Archivo({
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   description: "Amazon creative asset pipeline tracker for the Sportstech creative team.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
       <body>

@@ -4,9 +4,11 @@ import { useState } from "react";
 import ModalShell from "./ModalShell";
 import { useApp } from "../app-context";
 import { addDeliverableTypeAction, removeDeliverableTypeAction } from "@/app/actions/board";
+import { DTYPES } from "@/lib/domain";
 
 export default function ManageDtypesModal() {
   const { dbDtypes, closeModal, toast, refresh } = useApp();
+  const userDtypes = dbDtypes.filter((d) => !DTYPES.includes(d));
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -45,11 +47,12 @@ export default function ManageDtypesModal() {
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Packaging Design" style={{ flex: 1, padding: "6px 10px", border: "1px solid var(--brd)", borderRadius: 6, fontSize: 13 }} disabled={busy} autoFocus />
         <button type="submit" className="btn pri" disabled={busy || !name.trim()}>+ Add</button>
       </form>
-      {dbDtypes.length === 0 ? (
-        <p style={{ color: "var(--tx-3)", fontSize: 13 }}>No deliverable types yet.</p>
+      <p style={{ fontSize: 11, color: "var(--tx-3)", marginBottom: 12 }}>Built-in: {DTYPES.join(", ")}</p>
+      {userDtypes.length === 0 ? (
+        <p style={{ color: "var(--tx-3)", fontSize: 13 }}>No custom types added yet.</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-          {dbDtypes.map((d) => (
+          {userDtypes.map((d) => (
             <li key={d} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", border: "1px solid var(--brd)", borderRadius: 6, fontSize: 13 }}>
               <span>{d}</span>
               <button onClick={() => onRemove(d)} disabled={busy} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--tx-3)", fontSize: 20, lineHeight: 1, padding: "0 4px" }}>×</button>
