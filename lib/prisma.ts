@@ -1,3 +1,4 @@
+import "server-only";
 import { PrismaClient } from "@/app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
@@ -11,14 +12,10 @@ function make(): PrismaClient | null {
     return null;
   }
   try {
-    const pool = new pg.Pool({
-      host: DB_HOST,
-      port: Number(DB_PORT ?? 5432),
-      user: DB_USER,
-      password: DB_PASSWORD,
-      database: DB_NAME,
-      ssl: { rejectUnauthorized: false },
-    });
+    // URL-encode credentials so pg's connection-string parser handles special chars correctly,
+    // then override ssl so RDS's self-signed cert is accepted without hard-coding the cert bundle.
+    const connStr = `postgresql://${encodeURIComponent(DB_USER)}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${DB_PORT ?? "5432"}/${encodeURIComponent(DB_NAME)}`;
+    const pool = new pg.Pool({ connectionString: connStr, ssl: { rejectUnauthorized: false } });
     const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter });
   } catch (e) {
