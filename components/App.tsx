@@ -16,7 +16,7 @@ import AttnView from "./views/AttnView";
 import ModalRoot from "./modals/ModalRoot";
 import Toasts from "./Toasts";
 
-const POLL_MS = 6000;
+const POLL_MS = 0; // polling disabled — manual refresh only
 
 async function fetcher(url: string): Promise<BoardData> {
   const res = await fetch(url, { cache: "no-store" });
@@ -64,17 +64,18 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
   }, [mutate]);
 
   const toggleOpen = useCallback((id: string) => {
+    const isOpening = !open.has(id);
     setOpen((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
       } else {
         next.add(id);
-        logViewAction(id).catch(() => {}); // fire-and-forget: log the card view
       }
       return next;
     });
-  }, []);
+    if (isOpening) logViewAction(id).catch(() => {});
+  }, [open]);
   const isOpen = useCallback((id: string) => open.has(id), [open]);
   const setManyOpen = useCallback((ids: string[], val: boolean) => {
     setOpen((prev) => {
@@ -112,9 +113,10 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
   const projects = data?.projects ?? initialBoard.projects;
   const events = data?.events ?? initialBoard.events;
   const comments = data?.comments ?? initialBoard.comments;
-  const designers = data?.designers ?? initialBoard.designers ?? [];
-  const dbDtypes = data?.dbDtypes ?? initialBoard.dbDtypes ?? [];
-  const dbMarkets = data?.dbMarkets ?? initialBoard.dbMarkets ?? [];
+  const designers = data?.designers ?? initialBoard.designers;
+  const users = data?.users ?? initialBoard.users;
+  const dbDtypes = data?.dbDtypes ?? initialBoard.dbDtypes;
+  const dbMarkets = data?.dbMarkets ?? initialBoard.dbMarkets;
 
   const ctx: AppCtx = useMemo(
     () => ({
@@ -125,6 +127,7 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
       events,
       comments,
       designers,
+      users,
       dbDtypes,
       dbMarkets,
       connError: error ? error.message : null,
@@ -154,6 +157,7 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
       events,
       comments,
       designers,
+      users,
       dbDtypes,
       dbMarkets,
       error,
@@ -190,10 +194,10 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
         {view === "perf" && <PerfView />}
         {view === "attn" && <AttnView />}
       </div>
-      <div className="foot">
+      {/* <div className="foot">
         Sportstech Creative Ops · 12-stage Amazon creative pipeline · live database ·{" "}
         {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}
-      </div>
+      </div> */}
       <ModalRoot />
       <Toasts toasts={toasts} />
     </AppContext.Provider>

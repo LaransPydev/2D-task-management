@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-  const board = await loadBoard();
+  const board = await loadBoard(user.role === "head" || user.role === "pm");
   return NextResponse.json(board);
 }

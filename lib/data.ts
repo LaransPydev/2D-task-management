@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "./prisma";
-import type { CommentRow, EventRow, ProjectRow } from "./domain";
+import type { CommentRow, EventRow, ProjectRow, RoleId } from "./domain";
 import type { Project as DbProject, Event as DbEvent, Comment as DbComment } from "@/app/generated/prisma/client";
 
 // Maps Prisma rows (Date objects, nullable fks) to the plain JSON-safe shape
@@ -64,6 +64,16 @@ export interface BoardData {
   designers: string[];
   dbDtypes: string[];
   dbMarkets: string[];
+  users: UserSummary[];
+}
+
+export interface UserSummary {
+  id: string;
+  name: string;
+  username: string;
+  email: string | null;
+  role: RoleId;
+  hasPassword: boolean;
 }
 
 /** Everything the pipeline UI needs, in one round trip. Small team + small
@@ -78,9 +88,10 @@ const emptyBoard: BoardData = {
   designers: [],
   dbDtypes: [],
   dbMarkets: [],
+  users: [],
 };
 
-export async function loadBoard(): Promise<BoardData> {
+export async function loadBoard(includeCredentialUsers = false): Promise<BoardData> {
   if (!prisma) return emptyBoard;
   try {
     const [projects, events, comments, dbMembers, dbDtypeRows, dbMarketRows] = await Promise.all([
@@ -95,12 +106,32 @@ export async function loadBoard(): Promise<BoardData> {
       projects: projects.map(toProjectRow),
       events: events.map(toEventRow),
       comments: comments.map(toCommentRow),
-      designers: dbMembers.map((m) => m.name),
+      designers: dbMembers.filter((m) => m.role === "designer").map((m) => m.name),
       dbDtypes: dbDtypeRows.map((d) => d.name),
       dbMarkets: dbMarketRows.map((m) => m.name),
+      users: includeCredentialUsers
+        ? dbMembers.map((m) => ({
+            id: m.id,
+            name: m.name,
+            username: m.username,
+            email: m.email,
+            role: m.role as RoleId,
+            hasPassword: Boolean(m.passwordHash),
+          }))
+        : [],
     };
-  } catch (e) {
-    console.error("Database unavailable — rendering empty board.", e);
+  } catch {
+    console.error("Database unavailable — rendering empty board.");
     return emptyBoard;
+  }
+}
+
+export async function loadMembers(): Promise<string[]> {
+  if (!prisma) return [];
+  try {
+    const rows = await prisma.member.findMany({ where: { role: "designer" }, orderBy: { createdAt: "asc" } });
+    return rows.map((m) => m.name);
+  } catch {
+    return [];
   }
 }

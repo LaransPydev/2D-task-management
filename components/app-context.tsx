@@ -2,6 +2,7 @@
 
 import { createContext, useContext } from "react";
 import type { CommentRow, EventRow, ProjectRow, SessionUser } from "@/lib/domain";
+import type { UserSummary } from "@/lib/data";
 
 export interface Filters {
   q: string;
@@ -45,6 +46,7 @@ export interface AppCtx {
   events: EventRow[];
   comments: CommentRow[];
   designers: string[];
+  users: UserSummary[];
   dbDtypes: string[];
   dbMarkets: string[];
   connError: string | null;

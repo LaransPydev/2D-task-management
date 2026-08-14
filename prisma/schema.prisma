@@ -67,10 +67,15 @@ model Comment {
 }
 
 model Member {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  createdBy String   @map("created_by")
+  id                String    @id @default(uuid())
+  name              String    @unique
+  username          String    @unique
+  email             String?   @unique
+  role              String    @default("designer")
+  passwordHash      String?   @map("password_hash")
+  passwordUpdatedAt DateTime? @map("password_updated_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  createdBy         String    @map("created_by")
 
   @@map("members")
 }

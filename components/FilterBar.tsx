@@ -1,7 +1,7 @@
 "use client";
 
 import { useApp } from "./app-context";
-import { STAGES, AGE_CRIT, monthLabel } from "@/lib/domain";
+import { DTYPES, MARKETS, STAGES, AGE_CRIT, monthLabel } from "@/lib/domain";
 import { monthsAvailable } from "@/lib/analytics";
 import { filterProjects } from "@/lib/filter";
 
@@ -19,11 +19,13 @@ export default function FilterBar() {
   const { projects, events, filters, setFilter, user, isFull, open, setManyOpen, openModal, dbDtypes, dbMarkets } = useApp();
   const designers = [...new Set(projects.map((p) => p.designer))].filter((x): x is string => !!x).sort();
   const months = monthsAvailable(projects, events);
-  const list = filterProjects(projects, filters, user);
+  const list = filterProjects(projects, filters, user, events);
+  const dtypes = dbDtypes.length > 0 ? dbDtypes : DTYPES;
+  const markets = dbMarkets.length > 0 ? dbMarkets : MARKETS;
 
   return (
     <div className="filters">
-      <input type="search" placeholder="Search product, ASIN, ticket…" value={filters.q} onChange={(e) => setFilter("q", e.target.value)} />
+      <input type="search" placeholder="Search product, concept, link…" value={filters.q} onChange={(e) => setFilter("q", e.target.value)} />
       <div className="fld">
         <label>Designer</label>
         <select value={filters.designer} onChange={(e) => setFilter("designer", e.target.value)}>
@@ -39,7 +41,7 @@ export default function FilterBar() {
         <label>Deliverable</label>
         <select value={filters.dtype} onChange={(e) => setFilter("dtype", e.target.value)}>
           <option value="">All</option>
-          {dbDtypes.map((d) => (
+          {dtypes.map((d) => (
             <option key={d} value={d}>
               {d}
             </option>
@@ -50,7 +52,7 @@ export default function FilterBar() {
         <label>Market</label>
         <select value={filters.market} onChange={(e) => setFilter("market", e.target.value)}>
           <option value="">All</option>
-          {dbMarkets.map((d) => (
+          {markets.map((d) => (
             <option key={d} value={d}>
               {d}
             </option>

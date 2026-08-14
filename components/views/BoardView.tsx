@@ -6,8 +6,8 @@ import { AGE_CRIT, AGE_WARN, STAGES, avColor, ballWith, daysBetween, initials } 
 import FilterBar from "../FilterBar";
 
 export default function BoardView() {
-  const { projects, filters, user, gotoProject } = useApp();
-  const list = filterProjects(projects, filters, user);
+  const { projects, events, filters, user, gotoProject } = useApp();
+  const list = filterProjects(projects, filters, user, events);
 
   return (
     <>
@@ -17,9 +17,18 @@ export default function BoardView() {
         <div className="rule" />
         <span className="n">click a card to open it in the pipeline view</span>
       </div>
+      <div className="stage-flow" aria-label="Pipeline stages">
+        {STAGES.map((stage, index) => (
+          <div className="stage-flow-item" key={stage.id}>
+            <span>{stage.n}.{stage.short}</span>
+            {index < STAGES.length - 1 && <span className="stage-flow-arrow" aria-hidden="true">→</span>}
+          </div>
+        ))}
+      </div>
       <div className="board">
         {STAGES.map((s) => {
           const col = list.filter((p) => p.stage === s.id);
+          if (col.length === 0) return null;
           return (
             <div className="col" key={s.id}>
               <div className="col-h">
@@ -30,8 +39,7 @@ export default function BoardView() {
                 <span className="c">{col.length}</span>
               </div>
               <div className="col-b">
-                {col.length ? (
-                  col.map((p) => {
+                {col.map((p) => {
                     const b = ballWith(p);
                     const d = daysBetween(p.stageSince);
                     return (
@@ -51,10 +59,7 @@ export default function BoardView() {
                         </span>
                       </button>
                     );
-                  })
-                ) : (
-                  <div className="col-empty">empty</div>
-                )}
+                })}
               </div>
             </div>
           );
