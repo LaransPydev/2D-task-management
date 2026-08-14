@@ -539,14 +539,14 @@ pre.sql{
 .signin-divider::before,.signin-divider::after{content:"";height:1px;flex:1;background:var(--line)}
 .signin-card .visitor-button{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 .signin-error{padding:10px 12px;border-left:3px solid var(--ink);background:var(--s2);font-size:12px;line-height:1.5;color:var(--ink)}
-.user-fields{display:grid;grid-template-columns:1.2fr 1fr 1.4fr 1fr;gap:8px}
-.user-fields input,.user-fields select{width:100%;min-width:0}
+.user-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.user-fields input,.user-fields select{width:100%;min-width:0;height:40px}
 .users-section{display:grid;gap:24px}
 .create-user-panel{display:grid;gap:12px;padding:16px;border:1px solid var(--line);border-radius:7px;background:var(--s1)}
 .create-user-panel h4{font-size:14px;color:var(--ink);margin:0 0 3px}
 .create-user-panel p{font-size:11.5px;color:var(--tx-3);margin:0}
-.create-user-passwords{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.create-user-passwords input{width:100%;min-width:0}
+.create-user-passwords{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.create-user-passwords input{width:100%;min-width:0;height:40px}
 .user-list-toolbar{display:grid;gap:12px}
 .user-list-toolbar h4{font-size:14px;color:var(--ink);margin:0 0 3px}
 .user-list-toolbar p{font-size:11.5px;color:var(--tx-3);margin:0}
@@ -558,16 +558,18 @@ pre.sql{
 .user-role-filters button.active span{background:rgba(255,255,255,.2);color:#fff}
 .user-list{display:grid;gap:14px}
 .user-list-empty{padding:28px 16px;border:1px dashed var(--line-2);border-radius:7px;text-align:center;font-size:12px;color:var(--tx-3)}
-.user-editor{display:grid;gap:10px;padding:16px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+.user-editor{display:grid;gap:12px;padding:18px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
 .user-editor-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:2px}
 .user-editor-head strong{display:block;font-size:14px;color:var(--ink)}
 .user-editor-head span{display:block;margin-top:3px;font-family:var(--mono);font-size:9.5px;color:var(--tx-3)}
+.user-editor-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.user-editor-actions .btn{min-width:88px;justify-content:center}
 .user-section-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx-3)}
 .user-profile-actions{display:flex;justify-content:flex-end}
 .user-editor-divider{height:1px;background:var(--line);margin:3px 0}
-.user-password-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center}
-.user-password-row input{width:100%;min-width:0}
-.user-password-row .btn{white-space:nowrap}
+.user-password-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 136px;gap:10px;align-items:center}
+.user-password-row input{width:100%;min-width:0;height:40px}
+.user-password-row .btn{width:100%;height:40px;justify-content:center;white-space:nowrap}
 
 /* toast */
 .toasts{position:fixed;bottom:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:9px;max-width:340px}
@@ -609,7 +611,10 @@ pre.sql{
   .kpis{grid-template-columns:1fr 1fr}
   .user-fields{grid-template-columns:1fr}
   .create-user-passwords,.user-password-row{grid-template-columns:1fr}
-  .user-password-row .btn{justify-self:start}
+  .user-editor-head{align-items:flex-start;flex-direction:column}
+  .user-editor-actions{width:100%}
+  .user-editor-actions .btn{flex:1}
+  .user-password-row .btn{width:100%}
   .signin-card{padding:22px}
 }
 @media print{body::after{display:none}.topbar,.acts,.tgl,.askbar{display:none}}

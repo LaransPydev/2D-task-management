@@ -128,11 +128,17 @@ function UserEditor({ item, busy, act }: {
           <strong>{item.name}</strong>
           <span>{roleLb(item.role)} · @{item.username}</span>
         </div>
-        <button className="btn gh" disabled={busy} onClick={async () => {
-          if (await confirmDelete(`${item.name} will no longer be able to sign in.`)) {
-            await act(() => deleteUserAction(item.id), `${item.name} deleted`);
-          }
-        }}>Delete</button>
+        <div className="user-editor-actions">
+          <button className="btn" disabled={busy} onClick={() => act(
+            () => updateUserAction({ id: item.id, name, username, email, role }),
+            `${name} updated`,
+          )}>Save profile</button>
+          <button className="btn gh" disabled={busy} onClick={async () => {
+            if (await confirmDelete(`${item.name} will no longer be able to sign in.`)) {
+              await act(() => deleteUserAction(item.id), `${item.name} deleted`);
+            }
+          }}>Delete</button>
+        </div>
       </header>
       <span className="user-section-label">Profile details</span>
       <div className="user-fields">
@@ -142,12 +148,6 @@ function UserEditor({ item, busy, act }: {
         <select aria-label="Role" value={role} onChange={(e) => setRole(e.target.value as RoleId)} disabled={busy}>
           {roles.map((value) => <option key={value} value={value}>{roleLb(value)}</option>)}
         </select>
-      </div>
-      <div className="user-profile-actions">
-        <button className="btn" disabled={busy} onClick={() => act(
-          () => updateUserAction({ id: item.id, name, username, email, role }),
-          `${name} updated`,
-        )}>Save profile</button>
       </div>
       <div className="user-editor-divider" />
       <span className="user-section-label">Password access</span>
