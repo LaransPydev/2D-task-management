@@ -5,6 +5,20 @@ import { requirePrisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+const TH = ({ children }: { children: string }) => (
+  <th style={{ border: "1px solid #ddd", padding: "6px 12px", background: "#f5f5f5", textAlign: "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em" }}>{children}</th>
+);
+
+const TD = ({ children, muted }: { children: React.ReactNode; muted?: boolean }) => (
+  <td style={{ border: "1px solid #ddd", padding: "5px 12px", fontSize: 12, color: muted ? "#999" : undefined }}>{children ?? "—"}</td>
+);
+
+const Section = ({ title, count }: { title: string; count: number }) => (
+  <h2 style={{ fontSize: 14, fontWeight: 700, margin: "32px 0 10px", textTransform: "uppercase", letterSpacing: ".06em", color: "#444" }}>
+    {title} <span style={{ fontWeight: 400, color: "#999" }}>({count})</span>
+  </h2>
+);
+
 export default async function AdminPage() {
   const user = await getSessionUser();
   if (!user || (user.role !== "head" && user.role !== "pm")) redirect("/");
@@ -18,19 +32,6 @@ export default async function AdminPage() {
     db.deliverableType.findMany({ orderBy: { createdAt: "asc" } }),
     db.market.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
-
-  const TH = ({ children }: { children: string }) => (
-    <th style={{ border: "1px solid #ddd", padding: "6px 12px", background: "#f5f5f5", textAlign: "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em" }}>{children}</th>
-  );
-  const TD = ({ children, muted }: { children: React.ReactNode; muted?: boolean }) => (
-    <td style={{ border: "1px solid #ddd", padding: "5px 12px", fontSize: 12, color: muted ? "#999" : undefined }}>{children ?? "—"}</td>
-  );
-
-  const Section = ({ title, count }: { title: string; count: number }) => (
-    <h2 style={{ fontSize: 14, fontWeight: 700, margin: "32px 0 10px", textTransform: "uppercase", letterSpacing: ".06em", color: "#444" }}>
-      {title} <span style={{ fontWeight: 400, color: "#999" }}>({count})</span>
-    </h2>
-  );
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", padding: "32px 40px", maxWidth: 1400, margin: "0 auto" }}>

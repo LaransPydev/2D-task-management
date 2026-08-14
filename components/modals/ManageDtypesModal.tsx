@@ -5,9 +5,10 @@ import ModalShell from "./ModalShell";
 import { useApp } from "../app-context";
 import { addDeliverableTypeAction, removeDeliverableTypeAction } from "@/app/actions/board";
 import { DTYPES } from "@/lib/domain";
+import { confirmDelete } from "@/lib/delete-confirmation";
 
 export default function ManageDtypesModal() {
-  const { dbDtypes, closeModal, toast, refresh } = useApp();
+  const { dbDtypes, toast, refresh } = useApp();
   const userDtypes = dbDtypes.filter((d) => !DTYPES.includes(d));
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -29,6 +30,7 @@ export default function ManageDtypesModal() {
   }
 
   async function onRemove(n: string) {
+    if (!(await confirmDelete(`Deliverable "${n}" will be removed.`))) return;
     setBusy(true);
     try {
       await removeDeliverableTypeAction(n);

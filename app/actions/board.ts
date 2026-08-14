@@ -13,7 +13,6 @@ import {
   canEdit,
   isFull,
   isReadonly,
-  peopleIn,
   whyNot,
   type SessionUser,
 } from "@/lib/domain";
@@ -253,7 +252,7 @@ export async function commentAction(input: z.infer<typeof CommentSchema>) {
 /* ============================ VIEW ============================ */
 export async function logViewAction(projectId: string) {
   const user = await getSessionUser();
-  if (!user) return; // visitors who aren't signed in — silently skip
+  if (!user || user.role === "visitor") return;
   const db = requirePrisma();
   const exists = await db.project.findUnique({ where: { id: projectId }, select: { id: true } });
   if (!exists) return;
@@ -309,20 +308,16 @@ const AddDesignerSchema = z.object({ name: z.string().trim().min(2).max(60) });
 
 export async function addDesignerAction(input: z.infer<typeof AddDesignerSchema>) {
   const user = await requireUser();
-  if (user.role !== "lead" && user.role !== "head" && user.role !== "pm")
-    throw new Error("Only Team Lead, Team Head, or Project Manager can add designers.");
-  const { name } = AddDesignerSchema.parse(input);
-  const db = requirePrisma();
-  const exists = await db.member.findUnique({ where: { name } });
-  if (exists) throw new Error(`"${name}" is already in the roster.`);
-  await db.member.create({ data: { id: crypto.randomUUID(), name, createdBy: user.name } });
-  afterWrite();
+  AddDesignerSchema.parse(input);
+  if (user.role !== "head" && user.role !== "pm")
+    throw new Error("Only Team Heads and Project Managers can create users.");
+  throw new Error("Create the user from Manage → Users so login credentials are required.");
 }
 
 export async function removeDesignerAction(name: string) {
   const user = await requireUser();
-  if (user.role !== "lead" && user.role !== "head" && user.role !== "pm")
-    throw new Error("Only Team Lead, Team Head, or Project Manager can remove designers.");
+  if (user.role !== "head" && user.role !== "pm")
+    throw new Error("Only Team Heads and Project Managers can remove users.");
   await requirePrisma().member.delete({ where: { name } });
   afterWrite();
 }

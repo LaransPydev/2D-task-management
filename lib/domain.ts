@@ -152,6 +152,7 @@ export function isValidRosterName(name: string): boolean {
 }
 
 export interface SessionUser {
+  id: string;
   name: string;
   role: RoleId;
 }

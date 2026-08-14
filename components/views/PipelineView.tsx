@@ -9,8 +9,8 @@ import Kpi from "../Kpi";
 import ProjectCard from "../card/ProjectCard";
 
 export default function PipelineView() {
-  const { projects, events, filters, user, openModal } = useApp();
-  const list = filterProjects(projects, filters, user);
+  const { projects, events, filters, user, isReadonly, openModal } = useApp();
+  const list = filterProjects(projects, filters, user, events);
   const active = projects.filter(isActive);
   const stale = active.filter((p) => daysBetween(p.stageSince) >= AGE_CRIT).length;
   const m = monthMetrics(projects, events, monthKey(new Date()));
@@ -53,10 +53,12 @@ export default function PipelineView() {
       ) : (
         <div className="empty">
           <h3>Nothing matches those filters</h3>
-          <p>Clear the filters, or start a project — every project is one product plus one deliverable type, e.g. “WP300 Walking Pad · Main Gallery · DE”.</p>
-          <button className="btn pri" onClick={() => openModal({ kind: "new" })}>
-            + New project
-          </button>
+          <p>{isReadonly ? "Clear the filters to see the available projects." : "Clear the filters, or start a project — every project is one product plus one deliverable type, e.g. “WP300 Walking Pad · Main Gallery · DE”."}</p>
+          {!isReadonly && (
+            <button className="btn pri" onClick={() => openModal({ kind: "new" })}>
+              + New project
+            </button>
+          )}
         </div>
       )}
     </>

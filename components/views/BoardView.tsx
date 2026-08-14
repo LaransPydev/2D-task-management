@@ -6,8 +6,8 @@ import { AGE_CRIT, AGE_WARN, STAGES, avColor, ballWith, daysBetween, initials } 
 import FilterBar from "../FilterBar";
 
 export default function BoardView() {
-  const { projects, filters, user, gotoProject } = useApp();
-  const list = filterProjects(projects, filters, user);
+  const { projects, events, filters, user, gotoProject } = useApp();
+  const list = filterProjects(projects, filters, user, events);
 
   return (
     <>
@@ -16,6 +16,14 @@ export default function BoardView() {
         <h2>Pipeline board</h2>
         <div className="rule" />
         <span className="n">click a card to open it in the pipeline view</span>
+      </div>
+      <div className="stage-flow" aria-label="Pipeline stages">
+        {STAGES.map((stage, index) => (
+          <div className="stage-flow-item" key={stage.id}>
+            <span>{stage.n}.{stage.short}</span>
+            {index < STAGES.length - 1 && <span className="stage-flow-arrow" aria-hidden="true">→</span>}
+          </div>
+        ))}
       </div>
       <div className="board">
         {STAGES.map((s) => {

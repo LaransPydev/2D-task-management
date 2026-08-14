@@ -113,9 +113,10 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
   const projects = data?.projects ?? initialBoard.projects;
   const events = data?.events ?? initialBoard.events;
   const comments = data?.comments ?? initialBoard.comments;
-  const designers = data?.designers ?? initialBoard.designers ?? [];
-  const dbDtypes = data?.dbDtypes ?? initialBoard.dbDtypes ?? [];
-  const dbMarkets = data?.dbMarkets ?? initialBoard.dbMarkets ?? [];
+  const designers = data?.designers ?? initialBoard.designers;
+  const users = data?.users ?? initialBoard.users;
+  const dbDtypes = data?.dbDtypes ?? initialBoard.dbDtypes;
+  const dbMarkets = data?.dbMarkets ?? initialBoard.dbMarkets;
 
   const ctx: AppCtx = useMemo(
     () => ({
@@ -126,6 +127,7 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
       events,
       comments,
       designers,
+      users,
       dbDtypes,
       dbMarkets,
       connError: error ? error.message : null,
@@ -155,6 +157,7 @@ export default function App({ user, initialBoard }: { user: SessionUser; initial
       events,
       comments,
       designers,
+      users,
       dbDtypes,
       dbMarkets,
       error,
