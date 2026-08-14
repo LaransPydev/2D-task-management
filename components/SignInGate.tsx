@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { signInAction, visitorSignInAction } from "@/app/actions/auth";
+import PasswordInput from "./PasswordInput";
 
 const initialState = { error: null };
 
@@ -32,7 +33,7 @@ export default function SignInGate() {
           </label>
           <label>
             Password
-            <input autoComplete="current-password" name="password" required type="password" />
+            <PasswordInput autoComplete="current-password" name="password" required />
           </label>
           {state.error && <p className="signin-error" role="alert">{state.error}</p>}
           <button disabled={pending || visitorPending} type="submit">
