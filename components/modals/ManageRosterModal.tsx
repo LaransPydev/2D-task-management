@@ -11,6 +11,7 @@ import { createUserAction, deleteUserAction, setUserPasswordAction, updateUserAc
 import { roleLb, type RoleId } from "@/lib/domain";
 import type { UserSummary } from "@/lib/data";
 import { confirmDelete } from "@/lib/delete-confirmation";
+import PasswordInput from "../PasswordInput";
 
 type Tab = "users" | "dtypes" | "markets";
 const roles: RoleId[] = ["designer", "lead", "head", "pm", "visitor"];
@@ -27,7 +28,7 @@ function Section({
   items, builtIn, placeholder, onAdd, onRemove, busy,
 }: {
   items: string[]; builtIn: string[]; placeholder: string;
-  onAdd: (n: string) => Promise<void>; onRemove: (n: string) => Promise<void>; busy: boolean;
+  onAdd: (n: string) => Promise<unknown>; onRemove: (n: string) => Promise<unknown>; busy: boolean;
 }) {
   const [val, setVal] = useState("");
   async function submit(e: React.FormEvent) {
@@ -112,7 +113,7 @@ function Section({
 function UserEditor({ item, busy, act }: {
   item: UserSummary;
   busy: boolean;
-  act: (fn: () => Promise<void>, message: string) => Promise<void>;
+  act: (fn: () => Promise<void>, message: string) => Promise<boolean>;
 }) {
   const [name, setName] = useState(item.name);
   const [username, setUsername] = useState(item.username);
@@ -152,27 +153,25 @@ function UserEditor({ item, busy, act }: {
       <div className="user-editor-divider" />
       <span className="user-section-label">Password access</span>
       <div className="user-password-row">
-        <input
+        <PasswordInput
           aria-label={`New password for ${item.name}`}
           autoComplete="new-password"
           disabled={busy}
-          minLength={10}
+          minLength={6}
           onChange={(e) => setPassword(e.target.value)}
           placeholder={item.hasPassword ? "New password" : "Set initial password"}
-          type="password"
           value={password}
         />
-        <input
+        <PasswordInput
           aria-label={`Confirm new password for ${item.name}`}
           autoComplete="new-password"
           disabled={busy}
-          minLength={10}
+          minLength={6}
           onChange={(e) => setConfirmPassword(e.target.value)}
           placeholder="Confirm password"
-          type="password"
           value={confirmPassword}
         />
-        <button className="btn" disabled={busy || password.length < 10 || password !== confirmPassword} onClick={async () => {
+        <button className="btn" disabled={busy || password.length < 6 || password !== confirmPassword} onClick={async () => {
           await act(() => setUserPasswordAction({ id: item.id, password, confirmPassword }), `Password updated for ${name}`);
           setPassword("");
           setConfirmPassword("");
@@ -185,10 +184,11 @@ function UserEditor({ item, busy, act }: {
   );
 }
 
-function UsersSection({ users, busy, act }: {
+function UsersSection({ users, busy, act, onCreated }: {
   users: UserSummary[];
   busy: boolean;
-  act: (fn: () => Promise<void>, message: string) => Promise<void>;
+  act: (fn: () => Promise<void>, message: string) => Promise<boolean>;
+  onCreated: () => void;
 }) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -203,9 +203,11 @@ function UsersSection({ users, busy, act }: {
     e.preventDefault();
     if (password !== confirmPassword) return;
     const createdRole = role;
-    await act(() => createUserAction({ name, username, email, role, password, confirmPassword }), `${name} created`);
+    const created = await act(() => createUserAction({ name, username, email, role, password, confirmPassword }), `${name} created`);
+    if (!created) return;
     setName(""); setUsername(""); setEmail(""); setRole("designer"); setPassword(""); setConfirmPassword("");
     setRoleFilter(createdRole);
+    onCreated();
   }
 
   return (
@@ -224,14 +226,14 @@ function UsersSection({ users, busy, act }: {
           </select>
         </div>
         <div className="create-user-passwords">
-          <input required minLength={10} maxLength={128} autoComplete="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Initial password (10+ characters)" disabled={busy} style={{ flex: 1 }} />
-          <input required minLength={10} maxLength={128} autoComplete="new-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm password" disabled={busy} style={{ flex: 1 }} />
+          <PasswordInput required minLength={6} maxLength={128} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Initial password (6+ characters)" disabled={busy} />
+          <PasswordInput required minLength={6} maxLength={128} autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm password" disabled={busy} />
         </div>
         {confirmPassword && password !== confirmPassword && (
           <p className="signin-error" role="alert">Passwords do not match.</p>
         )}
         <div className="user-profile-actions">
-          <button className="btn pri" disabled={busy || password.length < 10 || password !== confirmPassword} type="submit">Create user</button>
+          <button className="btn pri" disabled={busy || password.length < 6 || password !== confirmPassword} type="submit">Create user</button>
         </div>
       </form>
       <div className="user-list-toolbar">
@@ -267,7 +269,7 @@ function UsersSection({ users, busy, act }: {
 }
 
 export default function ManageRosterModal() {
-  const { user, users, dbDtypes, dbMarkets, toast, refresh } = useApp();
+  const { user, users, dbDtypes, dbMarkets, toast, refresh, closeModal } = useApp();
   const canManageUsers = user.role === "head" || user.role === "pm";
   const [tab, setTab] = useState<Tab>(canManageUsers ? "users" : "dtypes");
   const [busy, setBusy] = useState(false);
@@ -277,8 +279,8 @@ export default function ManageRosterModal() {
 
   async function act(fn: () => Promise<void>, msg: string) {
     setBusy(true);
-    try { await fn(); await refresh(); toast("Done", msg, "ok"); }
-    catch (e) { toast("Failed", e instanceof Error ? e.message : String(e), "bad"); }
+    try { await fn(); await refresh(); toast("Done", msg, "ok"); return true; }
+    catch (e) { toast("Failed", e instanceof Error ? e.message : String(e), "bad"); return false; }
     finally { setBusy(false); }
   }
 
@@ -301,7 +303,7 @@ export default function ManageRosterModal() {
       </div>
       <div style={{ padding: "24px 24px 28px" }}>
 
-      {tab === "users" && canManageUsers && <UsersSection users={users} busy={busy} act={act} />}
+      {tab === "users" && canManageUsers && <UsersSection users={users} busy={busy} act={act} onCreated={closeModal} />}
       {tab === "dtypes" && (
         <Section items={customDtypes} builtIn={[]} placeholder="e.g. Packaging Design"
           onAdd={(n) => act(() => addDeliverableTypeAction({ name: n }), `"${n}" added`)}

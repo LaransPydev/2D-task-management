@@ -6,6 +6,7 @@ import ModalShell from "./ModalShell";
 import { useApp } from "../app-context";
 import { roleLb, TEAM_SIZE } from "@/lib/domain";
 import { signOutAction, updateOwnAccountAction } from "@/app/actions/auth";
+import PasswordInput from "../PasswordInput";
 
 export default function WhoModal() {
   const { user, isReadonly, isFull, closeModal, refresh, toast } = useApp();
@@ -79,43 +80,40 @@ export default function WhoModal() {
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 12 }}>
             Current password
-            <input
+            <PasswordInput
               autoComplete="current-password"
               disabled={busy}
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
-              type="password"
               value={currentPassword}
             />
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
             <label style={{ display: "grid", gap: 6, fontSize: 12 }}>
               New password (optional)
-              <input
+              <PasswordInput
                 autoComplete="new-password"
                 disabled={busy}
-                minLength={10}
+                minLength={6}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="At least 10 characters"
-                type="password"
+                placeholder="At least 6 characters"
                 value={newPassword}
               />
             </label>
             <label style={{ display: "grid", gap: 6, fontSize: 12 }}>
               Confirm new password
-              <input
+              <PasswordInput
                 autoComplete="new-password"
                 disabled={busy || !newPassword}
-                minLength={10}
+                minLength={6}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required={Boolean(newPassword)}
-                type="password"
                 value={confirmPassword}
               />
             </label>
           </div>
           <div>
-            <button className="btn pri" disabled={busy || !currentPassword || (newPassword.length > 0 && newPassword.length < 10)} type="submit">
+            <button className="btn pri" disabled={busy || !currentPassword || (newPassword.length > 0 && newPassword.length < 6)} type="submit">
               {busy ? "Saving…" : "Save my account"}
             </button>
           </div>

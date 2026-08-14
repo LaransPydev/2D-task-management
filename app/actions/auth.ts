@@ -6,7 +6,7 @@ import { requirePrisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { clearSessionCookie, getSessionUser, setSessionCookie } from "@/lib/session";
 
-const passwordSchema = z.string().min(10, "Password must be at least 10 characters.").max(128);
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters.").max(128);
 const usernameSchema = z.string().trim().toLowerCase().min(3).max(40).regex(/^[a-z0-9._-]+$/, "Use only letters, numbers, dots, underscores, or hyphens.");
 const emailSchema = z.union([z.literal(""), z.string().trim().toLowerCase().email("Enter a valid email address.")]);
 const roleSchema = z.enum(["designer", "lead", "head", "pm", "visitor"]);
