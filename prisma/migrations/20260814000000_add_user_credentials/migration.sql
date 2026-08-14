@@ -6,24 +6,29 @@ ALTER TABLE "members"
   ADD COLUMN "password_updated_at" TIMESTAMP(3);
 
 UPDATE "members"
-SET "username" = LOWER(REGEXP_REPLACE("name", '[^a-zA-Z0-9]+', '.', 'g')) || '-' || LEFT("id", 8)
+SET
+  "username"            = LOWER(REGEXP_REPLACE("name", '[^a-zA-Z0-9]+', '.', 'g')) || '-' || LEFT("id", 8),
+  "password_hash"       = COALESCE("password_hash", 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ'),
+  "password_updated_at" = COALESCE("password_updated_at", NOW())
 WHERE "username" IS NULL;
 
-INSERT INTO "members" ("id", "name", "username", "role", "created_by") VALUES
-  ('roster-vishnu-kumar', 'Vishnu Kumar', 'vishnu.kumar', 'designer', 'system'),
-  ('roster-vishnu-varthini', 'Vishnu Varthini', 'vishnu.varthini', 'designer', 'system'),
-  ('roster-onish', 'Onish', 'onish', 'designer', 'system'),
-  ('roster-asrafdeen', 'Asrafdeen', 'asrafdeen', 'designer', 'system'),
-  ('roster-abirami', 'Abirami', 'abirami', 'designer', 'system'),
-  ('roster-sanjay-kumar', 'Sanjay Kumar', 'sanjay.kumar', 'lead', 'system'),
-  ('roster-vimalraj', 'Vimalraj', 'vimalraj', 'lead', 'system'),
-  ('roster-thomas', 'Thomas', 'thomas', 'head', 'system'),
-  ('roster-lingesvar', 'Lingesvar', 'lingesvar', 'head', 'system'),
-  ('roster-kowsi', 'Kowsi', 'kowsi', 'pm', 'system'),
-  ('roster-visitor', 'Visitor', 'visitor', 'visitor', 'system')
+INSERT INTO "members" ("id", "name", "username", "role", "created_by", "password_hash", "password_updated_at") VALUES
+  ('roster-vishnu-kumar',    'Vishnu Kumar',    'vishnu.kumar',    'designer', 'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW()),
+  ('roster-vishnu-varthini', 'Vishnu Varthini', 'vishnu.varthini', 'designer', 'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW()),
+  ('roster-onish',           'Onish',           'onish',           'designer', 'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW()),
+  ('roster-asrafdeen',       'Asrafdeen',       'asrafdeen',       'designer', 'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW()),
+  ('roster-abirami',         'Abirami',         'abirami',         'designer', 'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW()),
+  ('roster-sanjay-kumar',    'Sanjay Kumar',    'sanjay.kumar',    'lead',     'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW()),
+  ('roster-vimalraj',        'Vimalraj',        'vimalraj',        'lead',     'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW()),
+  ('roster-thomas',          'Thomas',          'thomas',          'head',     'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW()),
+  ('roster-lingesvar',       'Lingesvar',       'lingesvar',       'head',     'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW()),
+  ('roster-kowsi',           'Kowsi',           'kowsi',           'pm',       'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW()),
+  ('roster-visitor',         'Visitor',         'visitor',         'visitor',  'system', 'scrypt$gGjWkaS44VvtL8ix_5rzeQ$YFcO_Sjfpp_xfuPBiZigZaDVFP7OIbjir2bUPglGzt9WJptu_8UeCw6dmjiJ1S3xm1f9ok44NAzNfp7jONTvcQ', NOW())
 ON CONFLICT ("name") DO UPDATE SET
-  "username" = EXCLUDED."username",
-  "role" = EXCLUDED."role";
+  "username"           = EXCLUDED."username",
+  "role"               = EXCLUDED."role",
+  "password_hash"      = COALESCE("members"."password_hash", EXCLUDED."password_hash"),
+  "password_updated_at" = COALESCE("members"."password_updated_at", EXCLUDED."password_updated_at");
 
 ALTER TABLE "members" ALTER COLUMN "username" SET NOT NULL;
 
