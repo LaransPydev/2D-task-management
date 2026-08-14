@@ -7,11 +7,18 @@
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "../app/generated/prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import path from "path";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 import { peopleIn, DAY } from "../lib/domain";
 
-const adapter = new PrismaBetterSqlite3({ url: `file:${path.resolve(__dirname, "dev.db")}` });
+const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT } = process.env;
+if (!DB_HOST || !DB_USER || !DB_PASSWORD || !DB_NAME) {
+  throw new Error("Set DB_HOST, DB_USER, DB_PASSWORD, and DB_NAME before seeding.");
+}
+const password = DB_PASSWORD.replace(/\\\$/g, () => "$");
+const connectionString = `postgresql://${encodeURIComponent(DB_USER)}:${encodeURIComponent(password)}@${DB_HOST}:${DB_PORT ?? "5432"}/${encodeURIComponent(DB_NAME)}`;
+const pool = new pg.Pool({ connectionString, ssl: { rejectUnauthorized: false } });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 type EventSpec = [kind: string, from: string | null, to: string, actor: string, actorRole: string, note: string, weight?: number];

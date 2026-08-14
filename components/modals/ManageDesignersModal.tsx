@@ -4,9 +4,10 @@ import { useState } from "react";
 import ModalShell from "./ModalShell";
 import { useApp } from "../app-context";
 import { addDesignerAction, removeDesignerAction } from "@/app/actions/board";
+import { confirmDelete } from "@/lib/delete-confirmation";
 
 export default function ManageDesignersModal() {
-  const { designers, closeModal, toast, refresh } = useApp();
+  const { designers, toast, refresh } = useApp();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -27,6 +28,7 @@ export default function ManageDesignersModal() {
   }
 
   async function onRemove(n: string) {
+    if (!(await confirmDelete(`Designer "${n}" will be removed from the roster.`))) return;
     setBusy(true);
     try {
       await removeDesignerAction(n);

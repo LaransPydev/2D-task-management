@@ -1,11 +1,27 @@
-import { AGE_CRIT, ProjectRow, ballWith, daysBetween, isActive, isOverdue, monthKey, type SessionUser } from "./domain";
+import { AGE_CRIT, ProjectRow, ballWith, daysBetween, isActive, isOverdue, monthKey, type EventRow, type SessionUser } from "./domain";
 import type { Filters } from "@/components/app-context";
 
-export function filterProjects(projects: ProjectRow[], f: Filters, user: SessionUser): ProjectRow[] {
-  const q = f.q.trim().toLowerCase();
+export function filterProjects(projects: ProjectRow[], f: Filters, user: SessionUser, events: EventRow[] = []): ProjectRow[] {
+  const queryTerms = f.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const notesByProject = new Map<string, string[]>();
+  for (const event of events) {
+    if (!event.note) continue;
+    const notes = notesByProject.get(event.projectId) ?? [];
+    notes.push(event.note);
+    notesByProject.set(event.projectId, notes);
+  }
+
   return projects
     .filter((p) => {
-      if (q && !(p.product + " " + p.asin + " " + p.dtype + " " + (p.designer || "") + " " + (p.ticketId || "")).toLowerCase().includes(q)) return false;
+      if (queryTerms.length) {
+        const searchableText = [
+          p.product, p.asin, p.dtype, p.market, p.stage, p.priority,
+          p.designer, p.lead, p.head, p.pm,
+          p.ticketId, p.ticketUrl, p.briefUrl, p.workUrl,
+          p.blockReason, ...(notesByProject.get(p.id) ?? []),
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (!queryTerms.every((term) => searchableText.includes(term))) return false;
+      }
       if (f.designer && p.designer !== f.designer) return false;
       if (f.dtype && p.dtype !== f.dtype) return false;
       if (f.market && p.market !== f.market) return false;

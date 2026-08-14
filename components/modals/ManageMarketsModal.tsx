@@ -5,9 +5,10 @@ import ModalShell from "./ModalShell";
 import { useApp } from "../app-context";
 import { addMarketAction, removeMarketAction } from "@/app/actions/board";
 import { MARKETS } from "@/lib/domain";
+import { confirmDelete } from "@/lib/delete-confirmation";
 
 export default function ManageMarketsModal() {
-  const { dbMarkets, closeModal, toast, refresh } = useApp();
+  const { dbMarkets, toast, refresh } = useApp();
   const userMarkets = dbMarkets.filter((m) => !MARKETS.includes(m));
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -29,6 +30,7 @@ export default function ManageMarketsModal() {
   }
 
   async function onRemove(n: string) {
+    if (!(await confirmDelete(`Market "${n}" will be removed.`))) return;
     setBusy(true);
     try {
       await removeMarketAction(n);

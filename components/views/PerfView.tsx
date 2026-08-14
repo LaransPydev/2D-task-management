@@ -47,7 +47,7 @@ export default function PerfView() {
   }
 
   function onExport() {
-    const rows = filterProjects(projects, filters, user);
+    const rows = filterProjects(projects, filters, user, events);
     const n = exportCSV(rows);
     toast("Exported", `${n} projects — semicolon separated, opens straight in German Excel.`, "ok");
   }
