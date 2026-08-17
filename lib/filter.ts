@@ -17,7 +17,7 @@ export function filterProjects(projects: ProjectRow[], f: Filters, user: Session
         const searchableText = [
           p.product, p.asin, p.dtype, p.market, p.stage, p.priority,
           p.designer, p.lead, p.head, p.pm,
-          p.ticketId, p.ticketUrl, p.briefUrl, p.workUrl,
+          p.ticketId, p.ticketType, p.ticketUrl, p.briefUrl, p.workUrl,
           p.blockReason, ...(notesByProject.get(p.id) ?? []),
         ].filter(Boolean).join(" ").toLowerCase();
         if (!queryTerms.every((term) => searchableText.includes(term))) return false;

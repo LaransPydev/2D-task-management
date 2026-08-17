@@ -113,13 +113,14 @@ const MoveSchema = z.object({
   note: z.string().trim().optional().default(""),
   reason: z.string().trim().optional().default(""),
   ticket: z.string().trim().optional().default(""),
+  ticketType: z.union([z.literal(""), z.enum(["A/B Testing", "Listing adjustment"])]).default(""),
 });
 export type MoveInput = z.infer<typeof MoveSchema>;
 
 export async function moveStageAction(input: MoveInput) {
   const user = await requireUser();
   requireNotReadonly(user);
-  const { projectId, to, note: rawNote, reason, ticket } = MoveSchema.parse(input);
+  const { projectId, to, note: rawNote, reason, ticket, ticketType } = MoveSchema.parse(input);
 
   const dbProject = await requirePrisma().project.findUnique({ where: { id: projectId } });
   if (!dbProject) throw new Error("Project not found.");
@@ -135,13 +136,17 @@ export async function moveStageAction(input: MoveInput) {
     note = "REJECTED — " + reason + (note ? ". " + note : "");
   }
   if (to === "ticket" && !ticket) throw new Error("The ticket ID is how you find the case again later.");
+  if (to === "ticket" && !ticketType) throw new Error("Select a ticket type.");
   if (mv.need && !note) throw new Error(mv.need + " — this is what answers “why is it pending”.");
 
   const patch: Record<string, unknown> = { stage: to, stageSince: new Date() };
   if (to === "lead_fix") patch.revLead = (p.revLead || 0) + 1;
   if (to === "head_fix") patch.revHead = (p.revHead || 0) + 1;
   if (to === "amz_rej") patch.revAmz = (p.revAmz || 0) + 1;
-  if (to === "ticket") patch.ticketId = ticket;
+  if (to === "ticket") {
+    patch.ticketId = ticket;
+    patch.ticketType = ticketType;
+  }
 
   const updated = await requirePrisma().project.update({ where: { id: projectId }, data: patch });
   await logEvent(projectId, user, "stage", p.stage, to, note || null);
@@ -193,6 +198,7 @@ const EditSchema = z.object({
   designer: z.string().trim().optional(),
   dueDate: z.string().optional().nullable(),
   ticketId: z.string().trim().optional(),
+  ticketType: z.union([z.literal(""), z.enum(["A/B Testing", "Listing adjustment"])]).optional(),
   lead: z.string().trim().optional(),
   head: z.string().trim().optional(),
   pm: z.string().trim().optional(),
@@ -212,7 +218,7 @@ export async function editAction(input: EditInput) {
 
   const patch: Record<string, unknown> = {};
   const changed: string[] = [];
-  const fields: (keyof EditInput)[] = ["product", "asin", "dtype", "market", "priority", "designer", "ticketId", "lead", "head", "pm", "briefUrl", "workUrl"];
+  const fields: (keyof EditInput)[] = ["product", "asin", "dtype", "market", "priority", "designer", "ticketId", "ticketType", "lead", "head", "pm", "briefUrl", "workUrl"];
   for (const f of fields) {
     if (data[f] === undefined) continue;
     const current = (p as unknown as Record<string, unknown>)[f] ?? "";

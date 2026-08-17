@@ -23,6 +23,7 @@ export function toProjectRow(p: DbProject): ProjectRow {
     createdAt: p.createdAt.toISOString(),
     stageSince: p.stageSince.toISOString(),
     ticketId: p.ticketId,
+    ticketType: p.ticketType,
     ticketUrl: p.ticketUrl,
     briefUrl: p.briefUrl,
     workUrl: p.workUrl,
