@@ -15,7 +15,15 @@ function make(): PrismaClient | null {
     // URL-encode credentials so pg's connection-string parser handles special chars correctly,
     // then override ssl so RDS's self-signed cert is accepted without hard-coding the cert bundle.
     const connStr = `postgresql://${encodeURIComponent(DB_USER)}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${DB_PORT ?? "5432"}/${encodeURIComponent(DB_NAME)}`;
-    const pool = new pg.Pool({ connectionString: connStr, ssl: { rejectUnauthorized: false } });
+    const pool = new pg.Pool({
+      connectionString: connStr,
+      ssl: { rejectUnauthorized: false },
+      keepAlive: true,              // prevents RDS from silently dropping idle connections
+      keepAliveInitialDelayMillis: 10_000,
+      idleTimeoutMillis: 30_000,    // close idle connections after 30 s before RDS does it
+      connectionTimeoutMillis: 5_000,
+      max: 10,
+    });
     const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter });
   } catch (e) {
@@ -25,7 +33,7 @@ function make(): PrismaClient | null {
 }
 
 export const prisma = g.__prisma ?? make();
-if (process.env.NODE_ENV !== "production") g.__prisma = prisma ?? undefined;
+g.__prisma = prisma;
 
 export function requirePrisma(): NonNullable<typeof prisma> {
   if (!prisma) throw new Error("No database connected. Set DB_HOST, DB_USER, DB_PASSWORD, DB_NAME in .env.");
