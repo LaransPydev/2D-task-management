@@ -185,6 +185,7 @@ export interface ProjectRow {
   createdAt: string;
   stageSince: string;
   ticketId: string;
+  ticketType: string;
   ticketUrl: string;
   briefUrl: string;
   workUrl: string;

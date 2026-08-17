@@ -23,6 +23,7 @@ model Project {
   createdAt   DateTime  @default(now()) @map("created_at")
   stageSince  DateTime  @default(now()) @map("stage_since")
   ticketId    String    @default("") @map("ticket_id")
+  ticketType  String    @default("") @map("ticket_type")
   ticketUrl   String    @default("") @map("ticket_url")
   briefUrl    String    @default("") @map("brief_url")
   workUrl     String    @default("") @map("work_url")

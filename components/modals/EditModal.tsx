@@ -44,6 +44,7 @@ export default function EditModal({ projectId }: { projectId: string }) {
         designer: String(fd.get("designer") || ""),
         dueDate: String(fd.get("due") || "") || null,
         ticketId: String(fd.get("ticket") || ""),
+        ticketType: String(fd.get("ticketType") || "") as "" | "A/B Testing" | "Listing adjustment",
         lead: String(fd.get("lead") || ""),
         head: String(fd.get("head") || ""),
         pm: String(fd.get("pm") || ""),
@@ -116,6 +117,14 @@ export default function EditModal({ projectId }: { projectId: string }) {
             <label className="f1">
               <span>Ticket ID</span>
               <input name="ticket" defaultValue={p.ticketId || ""} />
+            </label>
+            <label className="f1">
+              <span>Ticket type</span>
+              <select name="ticketType" defaultValue={p.ticketType || ""}>
+                <option value="">Not selected</option>
+                <option value="A/B Testing">A/B Testing</option>
+                <option value="Listing adjustment">Listing adjustment</option>
+              </select>
             </label>
           </div>
           <div className="frow">

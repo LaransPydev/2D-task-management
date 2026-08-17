@@ -44,6 +44,7 @@ export default function DetailsPane({ p, events }: { p: ProjectRow; events: Even
         <Fact k="Started" v={fmtDate(created)} cls="mono" />
         <Fact k="Cycle time" v={cycle} cls="mono" />
         <Fact k="Amazon ticket" v={p.ticketId || "—"} cls="mono" />
+        <Fact k="Ticket type" v={p.ticketType || "—"} />
         <Fact k="Slowest stage here" v={slow ? `${slow.s.short} · ${slow.v.toFixed(1)}d` : "—"} cls="mono" />
       </div>
       <div className="revbars">

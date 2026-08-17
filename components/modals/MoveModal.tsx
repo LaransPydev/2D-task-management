@@ -29,9 +29,10 @@ export default function MoveModal({ projectId, to }: { projectId: string; to: st
     const note = String(fd.get("note") || "").trim();
     const reason = String(fd.get("reason") || "");
     const ticket = String(fd.get("ticket") || "").trim();
+    const ticketType = String(fd.get("ticketType") || "") as "" | "A/B Testing" | "Listing adjustment";
     setBusy(true);
     try {
-      const updated = await moveStageAction({ projectId, to, note, reason, ticket });
+      const updated = await moveStageAction({ projectId, to, note, reason, ticket, ticketType });
       await refresh();
       closeModal();
       toast("Moved", `${updated.product} → ${S[to].label}. Ball with ${ballWith(updated).name}.`, to === "done" ? "ok" : "");
@@ -70,12 +71,24 @@ export default function MoveModal({ projectId, to }: { projectId: string; to: st
             </label>
           )}
           {isTicket && (
-            <label className="f1" style={{ marginBottom: 12 }}>
-              <span>
-                Ticket / case ID <em>*</em>
-              </span>
-              <input name="ticket" placeholder="e.g. CS-88421" defaultValue={p.ticketId || ""} />
-            </label>
+            <>
+              <label className="f1" style={{ marginBottom: 12 }}>
+                <span>
+                  Ticket / case ID <em>*</em>
+                </span>
+                <input name="ticket" placeholder="e.g. CS-88421" defaultValue={p.ticketId || ""} required />
+              </label>
+              <label className="f1" style={{ marginBottom: 12 }}>
+                <span>
+                  Ticket <em>*</em>
+                </span>
+                <select name="ticketType" defaultValue={p.ticketType || ""} required>
+                  <option value="" disabled>Select ticket type…</option>
+                  <option value="A/B Testing">A/B Testing</option>
+                  <option value="Listing adjustment">Listing adjustment</option>
+                </select>
+              </label>
+            </>
           )}
           <label className="f1">
             <span>{mv.need ? mv.need + " *" : "Note (optional but recommended)"}</span>
